@@ -1,16 +1,23 @@
 using UnityEngine;
 
-public class PlayerJumpState : MonoBehaviour
+public class PlayerJumpState : PlayerAiredState
 {
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
+    public PlayerJumpState(Player player, StateMachine stateMachine, string animBoolName) : base(player, stateMachine, animBoolName)
     {
-        
     }
 
-    // Update is called once per frame
-    void Update()
+    public override void Enter()
     {
-        
+        base.Enter();
+        player.SetVelocity(player.rb.linearVelocity.x, player.jumpForce);
+    }
+
+    public override void Update()
+    {
+        base.Update();
+        if (player.rb.linearVelocity.y < 0)
+        {
+            stateMachine.ChangeState(player.fallState);
+        }
     }
 }

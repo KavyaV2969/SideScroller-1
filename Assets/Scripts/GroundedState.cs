@@ -13,7 +13,7 @@ public class GroundedState : EntityState
 
         if (input.Player.Jump.WasPerformedThisFrame())
         {
-            stateMachine.ChangeState(player.idleState);
+            stateMachine.ChangeState(player.jumpState);
         }
     }
 }

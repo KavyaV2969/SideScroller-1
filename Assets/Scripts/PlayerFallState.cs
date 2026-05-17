@@ -1,16 +1,17 @@
 using UnityEngine;
 
-public class PlayerFallState : MonoBehaviour
+public class PlayerFallState : PlayerAiredState
 {
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
+    public PlayerFallState(Player player, StateMachine stateMachine, string animBoolName) : base(player, stateMachine, animBoolName)
     {
-        
     }
 
-    // Update is called once per frame
-    void Update()
+    public override void Update()
     {
-        
+        base.Update();
+        if (player.groundDetected)
+        {
+            stateMachine.ChangeState(player.idleState);
+        }
     }
 }
