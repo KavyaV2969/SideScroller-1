@@ -10,7 +10,7 @@ public class PlayerMoveState : GroundedState
     {
         base.Update();
 
-        if (player.moveInput == Vector2.zero)
+        if (player.moveInput.x == 0)
         {
             stateMachine.ChangeState(player.idleState);
         }

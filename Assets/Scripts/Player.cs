@@ -11,6 +11,7 @@ public class Player : MonoBehaviour
     public PlayerMoveState moveState { get; private set; }
     public PlayerJumpState jumpState { get; private set; }
     public PlayerFallState fallState { get; private set; }
+    public PlayerWallSlideState wallSlideState { get; private set; }
 
     public Vector2 moveInput { get; private set; }
 
@@ -18,13 +19,18 @@ public class Player : MonoBehaviour
     public float moveSpeed;
     public float jumpForce = 5;
 
+    [Range(0,1)]
+    public float inAirMoveMultiplier = 0.5f;
+
     [Header("Collision Details")]
     [SerializeField] private float groundCheckDistance;
     [SerializeField] private LayerMask whatIsGround;
+    [SerializeField] private float wallCheckDistance;
     public bool groundDetected { get; private set; }
+    public bool wallDetected { get; private set; }
 
     private bool facingRight = true;
-    
+    private float facingDir = 1;
 
     private void Awake()
     {
@@ -37,6 +43,7 @@ public class Player : MonoBehaviour
         moveState = new PlayerMoveState(this, stateMachine, "move");
         jumpState = new PlayerJumpState(this, stateMachine, "jumpFall");
         fallState = new PlayerFallState(this, stateMachine, "jumpFall");
+        wallSlideState = new PlayerWallSlideState(this, stateMachine, "wallSlide");
     }
 
     private void OnEnable()
@@ -68,10 +75,11 @@ public class Player : MonoBehaviour
         HandleFlip(xVelocity);
     }
 
-    private void Flip()
+    public void Flip()
     {
         transform.Rotate(0, 180, 0);
         facingRight = !facingRight;
+        facingDir *= -1;
     }
 
     private void HandleFlip(float xVelocity)
@@ -88,11 +96,13 @@ public class Player : MonoBehaviour
     private void HandleCollisionDetection()
     {
         groundDetected = Physics2D.Raycast(transform.position, Vector2.down, groundCheckDistance, whatIsGround);
+        wallDetected = Physics2D.Raycast(transform.position, Vector2.right * facingDir, wallCheckDistance, whatIsGround);
     }
 
     private void OnDrawGizmos()
     {
         Gizmos.color = Color.red;
         Gizmos.DrawLine(transform.position, transform.position + new Vector3(0, -groundCheckDistance));
+        Gizmos.DrawLine(transform.position, transform.position + new Vector3(wallCheckDistance * facingDir, 0));
     }
 }
