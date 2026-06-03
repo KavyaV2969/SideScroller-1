@@ -1,5 +1,3 @@
-using UnityEngine;
-
 public class PlayerMoveState : GroundedState
 {
     public PlayerMoveState(Player player, StateMachine stateMachine, string stateName) : base(player, stateMachine, stateName)
@@ -10,6 +8,7 @@ public class PlayerMoveState : GroundedState
     {
         base.Update();
 
+        // Return to idle when horizontal input is released.
         if (player.moveInput.x == 0)
         {
             stateMachine.ChangeState(player.idleState);
@@ -18,4 +17,3 @@ public class PlayerMoveState : GroundedState
         player.SetVelocity(player.moveInput.x * player.moveSpeed, rb.linearVelocity.y);
     }
 }
-

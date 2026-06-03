@@ -1,6 +1,3 @@
-using Unity.VisualScripting;
-using UnityEngine;
-
 public class PlayerWallJumpState : EntityState
 {
     public PlayerWallJumpState(Player player, StateMachine stateMachine, string animBoolName) : base(player, stateMachine, animBoolName)
@@ -18,11 +15,13 @@ public class PlayerWallJumpState : EntityState
     {
         base.Update();
 
-        if (rb.linearVelocity.y<0)
+        // Transition to falling once the wall jump starts moving downward.
+        if (rb.linearVelocity.y < 0)
         {
             stateMachine.ChangeState(player.fallState);
         }
 
+        // Re-enter the wall slide if the player reconnects with a wall.
         if (player.wallDetected)
         {
             stateMachine.ChangeState(player.wallSlideState);

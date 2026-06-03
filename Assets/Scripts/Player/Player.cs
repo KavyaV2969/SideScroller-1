@@ -13,6 +13,7 @@ public class Player : MonoBehaviour
     public PlayerFallState fallState { get; private set; }
     public PlayerWallSlideState wallSlideState { get; private set; }
     public PlayerWallJumpState wallJumpState { get; private set; }
+    public PlayerDashState dashState { get; private set; }
 
     public Vector2 moveInput { get; private set; }
 
@@ -20,8 +21,10 @@ public class Player : MonoBehaviour
     public float moveSpeed;
     public float jumpForce = 5;
     public Vector2 wallJumpDir;
+    public float dashDuration = 0.25f;
+    public float dashSpeed = 20;
 
-    [Range(0,1)]
+    [Range(0, 1)]
     public float inAirMoveMultiplier = 0.5f;
 
     [Header("Collision Details")]
@@ -33,9 +36,10 @@ public class Player : MonoBehaviour
 
     private bool facingRight = true;
     public float facingDir { get; private set; } = 1;
-
+    
     private void Awake()
     {
+        // Cache required components and create the state instances used by the state machine.
         anim = GetComponentInChildren<Animator>();
         rb = GetComponent<Rigidbody2D>();
         stateMachine = new StateMachine();
@@ -47,12 +51,14 @@ public class Player : MonoBehaviour
         fallState = new PlayerFallState(this, stateMachine, "jumpFall");
         wallSlideState = new PlayerWallSlideState(this, stateMachine, "wallSlide");
         wallJumpState = new PlayerWallJumpState(this, stateMachine, "jumpFall");
+        dashState = new PlayerDashState(this, stateMachine, "dash");
     }
 
     private void OnEnable()
     {
         input.Enable();
 
+        // Keep the latest movement input available to every player state.
         input.Player.Movement.performed += ctx => moveInput = ctx.ReadValue<Vector2>();
         input.Player.Movement.canceled += ctx => moveInput = Vector2.zero;
     }
@@ -70,11 +76,14 @@ public class Player : MonoBehaviour
     private void Update()
     {
         HandleCollisionDetection();
+
         stateMachine.UpdateActiveState();
     }
 
-    public void SetVelocity(float xVelocity, float yVelocity) { 
+    public void SetVelocity(float xVelocity, float yVelocity)
+    {
         rb.linearVelocity = new Vector2(xVelocity, yVelocity);
+
         HandleFlip(xVelocity);
     }
 
@@ -86,7 +95,8 @@ public class Player : MonoBehaviour
     }
 
     private void HandleFlip(float xVelocity)
-    {   if (xVelocity > 0 && !facingRight)
+    {
+        if (xVelocity > 0 && !facingRight)
         {
             Flip();
         }
@@ -98,6 +108,7 @@ public class Player : MonoBehaviour
 
     private void HandleCollisionDetection()
     {
+        // Raycasts are refreshed each frame so states can react immediately.
         groundDetected = Physics2D.Raycast(transform.position, Vector2.down, groundCheckDistance, whatIsGround);
         wallDetected = Physics2D.Raycast(transform.position, Vector2.right * facingDir, wallCheckDistance, whatIsGround);
     }
@@ -105,6 +116,7 @@ public class Player : MonoBehaviour
     private void OnDrawGizmos()
     {
         Gizmos.color = Color.red;
+
         Gizmos.DrawLine(transform.position, transform.position + new Vector3(0, -groundCheckDistance));
         Gizmos.DrawLine(transform.position, transform.position + new Vector3(wallCheckDistance * facingDir, 0));
     }

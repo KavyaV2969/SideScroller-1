@@ -649,6 +649,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Player
   moveSpeed: 10
   jumpForce: 12
+  wallJumpDir: {x: 6, y: 12}
+  dashDuration: 0.2
+  dashSpeed: 25
   inAirMoveMultiplier: 0.5
   groundCheckDistance: 1.4
   whatIsGround:
