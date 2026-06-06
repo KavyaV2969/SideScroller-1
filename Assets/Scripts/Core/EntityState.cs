@@ -8,6 +8,7 @@ public abstract class EntityState
     protected Animator anim;
     protected Rigidbody2D rb;
     protected PlayerInputSystem input;
+    protected bool triggerCalled;
     
     protected float stateTimer;
 
@@ -26,6 +27,7 @@ public abstract class EntityState
     public virtual void Enter()
     {
         anim.SetBool(animBoolName, true);
+        triggerCalled = false;
     }
 
     public virtual void Update()
@@ -59,5 +61,10 @@ public abstract class EntityState
         }
         
         return true;
+    }
+
+    public void CallAnimationTrigger ()
+    {
+        triggerCalled = true;
     }
 }

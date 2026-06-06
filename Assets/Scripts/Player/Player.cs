@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections;
 
 public class Player : MonoBehaviour
 {
@@ -14,8 +15,15 @@ public class Player : MonoBehaviour
     public PlayerWallSlideState wallSlideState { get; private set; }
     public PlayerWallJumpState wallJumpState { get; private set; }
     public PlayerDashState dashState { get; private set; }
+    public PlayerAttackState attackState { get; private set; }  
 
     public Vector2 moveInput { get; private set; }
+
+    [Header("Attack Details")]
+    public Vector2[] attackVelocity;
+    public float attackVelocityDuration = 0.1f;
+    public float comboResetTime = 1;
+    private Coroutine queuedAttackCo;
 
     [Header("Movement Details")]
     public float moveSpeed;
@@ -52,6 +60,7 @@ public class Player : MonoBehaviour
         wallSlideState = new PlayerWallSlideState(this, stateMachine, "wallSlide");
         wallJumpState = new PlayerWallJumpState(this, stateMachine, "jumpFall");
         dashState = new PlayerDashState(this, stateMachine, "dash");
+        attackState = new PlayerAttackState(this, stateMachine, "basicAttack");
     }
 
     private void OnEnable()
@@ -94,6 +103,11 @@ public class Player : MonoBehaviour
         facingDir *= -1;
     }
 
+    public void callAnimationTrigger()
+    {
+        stateMachine.currentState.CallAnimationTrigger();
+    }
+
     private void HandleFlip(float xVelocity)
     {
         if (xVelocity > 0 && !facingRight)
@@ -119,5 +133,21 @@ public class Player : MonoBehaviour
 
         Gizmos.DrawLine(transform.position, transform.position + new Vector3(0, -groundCheckDistance));
         Gizmos.DrawLine(transform.position, transform.position + new Vector3(wallCheckDistance * facingDir, 0));
+    }
+
+    private IEnumerator EnterAttackStateWithDelayedCo()
+    {
+        yield return new WaitForEndOfFrame();
+        stateMachine.ChangeState(attackState);
+    }
+
+    public void EnterAttackStatewithDelay()
+    {
+        if (queuedAttackCo != null)
+        {
+            StopCoroutine(queuedAttackCo);
+        }
+
+        queuedAttackCo = StartCoroutine(EnterAttackStateWithDelayedCo());
     }
 }

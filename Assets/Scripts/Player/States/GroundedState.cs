@@ -19,5 +19,11 @@ public class GroundedState : EntityState
         {
             stateMachine.ChangeState(player.jumpState);
         }
+
+        // If attack pressed, transition to attack state.
+        if (input.Player.Attack.WasPerformedThisFrame())
+        {
+            stateMachine.ChangeState(player.attackState);
+        }
     }
 }
