@@ -16,7 +16,7 @@ public class PlayerJumpState : PlayerAiredState
         base.Update();
 
         // Switch to falling once upward momentum has ended.
-        if (player.rb.linearVelocity.y < 0)
+        if (player.rb.linearVelocity.y < 0 && stateMachine.currentState != player.jumpAttackState)
         {
             stateMachine.ChangeState(player.fallState);
         }
