@@ -9,7 +9,7 @@ public class PlayerMoveState : GroundedState
         base.Update();
 
         // Return to idle when horizontal input is released.
-        if (player.moveInput.x == 0)
+        if (player.moveInput.x == 0 || player.wallDetected)
         {
             stateMachine.ChangeState(player.idleState);
         }

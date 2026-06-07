@@ -15,6 +15,11 @@ public class PlayerIdleState : GroundedState
     {
         base.Update();
 
+        if (player.moveInput.x == player.facingDir && player.wallDetected)
+        {
+            return;
+        }
+
         // Start moving when horizontal input is pressed.
         if (player.moveInput.x != 0)
         {

@@ -8,15 +8,15 @@ public class PlayerAiredState : EntityState
     {
         base.Update();
 
+        if (input.Player.Attack.WasPerformedThisFrame())
+        {
+            stateMachine.ChangeState(player.jumpAttackState);
+        }
+
         // Allow reduced horizontal control while airborne.
         if (player.moveInput.x != 0)
         {
             player.SetVelocity(player.moveInput.x * (player.moveSpeed * player.inAirMoveMultiplier), rb.linearVelocity.y);
-        }
-
-        if (input.Player.Attack.WasPerformedThisFrame())
-        {
-            stateMachine.ChangeState(player.jumpAttackState);
         }
     }
 }
