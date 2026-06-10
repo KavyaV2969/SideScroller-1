@@ -1,15 +1,15 @@
 public class StateMachine
 {
-    public EntityState currentState { get; private set; }
+    public PlayerState currentState { get; private set; }
 
-    public void Initialize(EntityState startingState)
+    public void Initialize(PlayerState startingState)
     {
         currentState = startingState;
 
         currentState.Enter();
     }
 
-    public void ChangeState(EntityState newState)
+    public void ChangeState(PlayerState newState)
     {
         currentState.Exit();
 

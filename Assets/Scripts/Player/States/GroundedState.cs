@@ -1,4 +1,4 @@
-public class GroundedState : EntityState
+public class GroundedState : PlayerState
 {
     public GroundedState(Player player, StateMachine stateMachine, string animBoolName) : base(player, stateMachine, animBoolName)
     {

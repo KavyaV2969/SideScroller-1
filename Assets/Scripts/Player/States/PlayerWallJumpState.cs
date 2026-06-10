@@ -1,4 +1,4 @@
-public class PlayerWallJumpState : EntityState
+public class PlayerWallJumpState : PlayerState
 {
     public PlayerWallJumpState(Player player, StateMachine stateMachine, string animBoolName) : base(player, stateMachine, animBoolName)
     {
