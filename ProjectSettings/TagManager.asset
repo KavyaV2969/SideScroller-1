@@ -44,6 +44,9 @@ TagManager:
   - name: Hills
     uniqueID: 611723647
     locked: 0
+  - name: Background Tiles
+    uniqueID: 2403950643
+    locked: 0
   - name: Ground
     uniqueID: 2493744919
     locked: 0

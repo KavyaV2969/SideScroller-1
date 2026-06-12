@@ -10,6 +10,7 @@ public class Entity : MonoBehaviour
     [SerializeField] private float groundCheckDistance;
     [SerializeField] private float wallCheckDistance;
     [SerializeField] private LayerMask whatIsGround;
+    [SerializeField] private Transform groundCheck;
     [SerializeField] private Transform primaryWallCheck;
     [SerializeField] private Transform secondaryWallCheck;
     public bool groundDetected { get; private set; }
@@ -49,7 +50,7 @@ public class Entity : MonoBehaviour
 
     public virtual void callAnimationTrigger()
     {
-        stateMachine.currentState.CallAnimationTrigger();
+        stateMachine.currentState?.CallAnimationTrigger();
     }
 
     private void HandleFlip(float xVelocity)
@@ -66,7 +67,7 @@ public class Entity : MonoBehaviour
 
     private void HandleCollisionDetection()
     {
-        groundDetected = Physics2D.Raycast(transform.position, Vector2.down, groundCheckDistance, whatIsGround);
+        groundDetected = Physics2D.Raycast(groundCheck.position, Vector2.down, groundCheckDistance, whatIsGround);
 
         if (primaryWallCheck == null || secondaryWallCheck == null)
         {
@@ -82,7 +83,7 @@ public class Entity : MonoBehaviour
     {
         Gizmos.color = Color.red;
 
-        Gizmos.DrawLine(transform.position, transform.position + new Vector3(0, -groundCheckDistance));
+        Gizmos.DrawLine(groundCheck.position, groundCheck.position + new Vector3(0, -groundCheckDistance));
 
         if (primaryWallCheck != null)
         {
