@@ -461,17 +461,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: efd76681c99b9ea4cac638a98e6b55d2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Enemy_Knight
-  groundCheckDistance: 0.5
-  wallCheckDistance: 1
   whatIsGround:
     serializedVersion: 2
     m_Bits: 64
+  groundCheckDistance: 0.5
+  wallCheckDistance: 1
   groundCheck: {fileID: 1704613004}
   primaryWallCheck: {fileID: 1753989070}
   secondaryWallCheck: {fileID: 0}
   idleTime: 2
   moveSpeed: 5
   moveAnimSpeedMultiplier: 1.2
+  playerLayer:
+    serializedVersion: 2
+    m_Bits: 256
+  playerCheck: {fileID: 572943664}
+  playerCheckDistance: 10
 --- !u!4 &572943664
 Transform:
   m_ObjectHideFlags: 0
@@ -605,11 +610,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a34c98b3e305d7b418678f2291350504, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Player
-  groundCheckDistance: 1.4
-  wallCheckDistance: 0.5
   whatIsGround:
     serializedVersion: 2
     m_Bits: 64
+  groundCheckDistance: 1.4
+  wallCheckDistance: 0.5
   groundCheck: {fileID: 744048894}
   primaryWallCheck: {fileID: 1340898370}
   secondaryWallCheck: {fileID: 31891884}
