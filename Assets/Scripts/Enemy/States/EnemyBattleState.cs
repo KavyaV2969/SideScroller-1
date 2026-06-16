@@ -3,7 +3,9 @@ using UnityEngine;
 
 public class EnemyBattleState : EnemyState
 {
-    private Transform player;
+    protected Transform player;
+    private float lastTimeWasInBattle;
+
     public EnemyBattleState(Enemy enemy, StateMachine stateMachine, string animBoolName) : base(enemy, stateMachine, animBoolName)
     {
     }
@@ -21,18 +23,48 @@ public class EnemyBattleState : EnemyState
     {
         base.Update();
 
-        if (WithinAttackRange())
+        if (enemy.PlayerDetection() == true)
         {
+            SetLastTimeInBattle();
+        }
+
+        if (BattleOver())
+        {
+            stateMachine.ChangeState(enemy.idleState);
+            return;
+        }
+
+        if (HandleBattleBehavior())
+        {
+            return;
+        }
+
+        if (WithinAttackRange() && enemy.PlayerDetection())
+        {
+            enemy.SetVelocity(0, rb.linearVelocity.y);
             stateMachine.ChangeState(enemy.attackState);
+            return;
         }
-        else
+
+        if (enemy.wallDetected)
         {
-            enemy.SetVelocity(DirectionToMove() * enemy.battleMoveSpeed, rb.linearVelocity.y);
+            enemy.SetVelocity(0, rb.linearVelocity.y);
+            return;
         }
+
+        enemy.SetVelocity(DirectionToMove() * enemy.battleMoveSpeed, rb.linearVelocity.y);
+
     }
 
     private bool WithinAttackRange() => DistanceToPlayer() < enemy.attackDistance;
-    private float DistanceToPlayer()
+
+    private bool BattleOver() => Time.time > lastTimeWasInBattle + enemy.battleTimeDuration;
+
+    private void SetLastTimeInBattle() => lastTimeWasInBattle = Time.time;
+
+    protected virtual bool HandleBattleBehavior() => false;
+
+    protected float DistanceToPlayer()
     {
         if (player == null)
         {
@@ -42,7 +74,7 @@ public class EnemyBattleState : EnemyState
         return Math.Abs(player.position.x - enemy.transform.position.x);
     }
 
-    private float DirectionToMove()
+    protected float DirectionToMove()
     {
         if (player == null)
         {

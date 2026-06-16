@@ -19,4 +19,9 @@ public class EntityAnimationTriggers : MonoBehaviour
 
         entity.callAnimationTrigger();
     }
+
+    private void attackTrigger()
+    {
+        Debug.Log("Attack Trigger");
+    }
 }

@@ -53,7 +53,7 @@ public class Entity : MonoBehaviour
         stateMachine.currentState?.CallAnimationTrigger();
     }
 
-    private void HandleFlip(float xVelocity)
+    public void HandleFlip(float xVelocity)
     {
         if (xVelocity > 0 && !facingRight)
         {

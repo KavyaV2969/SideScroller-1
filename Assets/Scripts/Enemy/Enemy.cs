@@ -6,11 +6,12 @@ public class Enemy : Entity
     public EnemyIdleState idleState;
     public EnemyMoveState moveState;
     public EnemyAttackState attackState;
-    public EnemyBattleState battleState;
+    public KnightBattleState battleState;
 
     [Header("Battle Details")]
     public float battleMoveSpeed = 3;
     public float attackDistance;
+    public float battleTimeDuration = 10f;
 
     [Header("Movement Details")]
     public float idleTime = 2f;
@@ -23,10 +24,11 @@ public class Enemy : Entity
     [SerializeField] private Transform playerCheck;
     [SerializeField] private float playerCheckDistance = 10;
 
+    protected Vector3 PlayerCheckOrigin => playerCheck != null ? playerCheck.position : transform.position;
+
     public RaycastHit2D PlayerDetection()
     {
-        Vector2 origin = playerCheck != null ? playerCheck.position : transform.position;
-        RaycastHit2D hit = Physics2D.Raycast(origin, new Vector2(facingDir, 0), playerCheckDistance, whatIsGround | playerLayer);
+        RaycastHit2D hit = Physics2D.Raycast(PlayerCheckOrigin, new Vector2(facingDir, 0), playerCheckDistance, whatIsGround | playerLayer);
 
         if (hit.collider == null || hit.collider.gameObject.layer != LayerMask.NameToLayer("Player"))
         {
@@ -43,10 +45,9 @@ public class Enemy : Entity
 
         Gizmos.color = Color.yellow;
 
-        Vector3 origin = playerCheck != null ? playerCheck.position : transform.position;
-        Gizmos.DrawLine(origin, new Vector3(origin.x + (facingDir * playerCheckDistance), origin.y));
+        Gizmos.DrawLine(PlayerCheckOrigin, new Vector3(PlayerCheckOrigin.x + (facingDir * playerCheckDistance), PlayerCheckOrigin.y));
 
         Gizmos.color = Color.blue;
-        Gizmos.DrawLine(origin, new Vector3(origin.x + (facingDir * attackDistance), origin.y));
+        Gizmos.DrawLine(PlayerCheckOrigin, new Vector3(PlayerCheckOrigin.x + (facingDir * attackDistance), PlayerCheckOrigin.y));
     }
 }

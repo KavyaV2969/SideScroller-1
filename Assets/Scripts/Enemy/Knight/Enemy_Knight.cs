@@ -2,6 +2,10 @@ using UnityEngine;
 
 public class Enemy_Knight : Enemy
 {
+    [Header("Knight Battle Details")]
+    public float minimumRetreatDistance = 1;
+    public Vector2 retreatVelocity;
+
     protected override void Awake()
     {
         base.Awake();
@@ -9,12 +13,20 @@ public class Enemy_Knight : Enemy
         idleState = new EnemyIdleState(this, stateMachine, "idle");
         moveState = new EnemyMoveState(this, stateMachine, "move");
         attackState = new EnemyAttackState(this, stateMachine, "attack");
-        battleState = new EnemyBattleState(this, stateMachine, "battle");
+        battleState = new KnightBattleState(this, stateMachine, "battle");
     }
 
     protected override void Start()
     {
         base.Start();
         stateMachine.Initialize(idleState);
+    }
+
+    protected override void OnDrawGizmos()
+    {
+        base.OnDrawGizmos();
+
+        Gizmos.color = Color.green;
+        Gizmos.DrawLine(PlayerCheckOrigin, new Vector3(PlayerCheckOrigin.x + (facingDir * minimumRetreatDistance), PlayerCheckOrigin.y));
     }
 }

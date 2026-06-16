@@ -469,6 +469,9 @@ MonoBehaviour:
   groundCheck: {fileID: 1704613004}
   primaryWallCheck: {fileID: 1753989070}
   secondaryWallCheck: {fileID: 0}
+  battleMoveSpeed: 8
+  attackDistance: 3.5
+  battleTimeDuration: 10
   idleTime: 2
   moveSpeed: 5
   moveAnimSpeedMultiplier: 1.2
@@ -476,7 +479,9 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 256
   playerCheck: {fileID: 572943664}
-  playerCheckDistance: 10
+  playerCheckDistance: 8
+  minimumRetreatDistance: 1
+  retreatVelocity: {x: 5, y: 3}
 --- !u!4 &572943664
 Transform:
   m_ObjectHideFlags: 0
@@ -911,7 +916,7 @@ MonoBehaviour:
       Offset: {x: 0, y: 0}
   CenterOnActivate: 1
   TargetOffset: {x: 0, y: 0, z: 0}
-  Damping: {x: 3, y: 1, z: 1}
+  Damping: {x: 1, y: 1, z: 1}
   Lookahead:
     Enabled: 1
     Time: 1
