@@ -67,9 +67,14 @@ public class Entity : MonoBehaviour
 
     private void HandleCollisionDetection()
     {
-        groundDetected = Physics2D.Raycast(groundCheck.position, Vector2.down, groundCheckDistance, whatIsGround);
+        groundDetected = groundCheck != null
+            && Physics2D.Raycast(groundCheck.position, Vector2.down, groundCheckDistance, whatIsGround);
 
-        if (secondaryWallCheck != null)
+        if (primaryWallCheck == null)
+        {
+            wallDetected = false;
+        }
+        else if (secondaryWallCheck != null)
         {
             wallDetected = Physics2D.Raycast(primaryWallCheck.position, Vector2.right * facingDir, wallCheckDistance, whatIsGround)
                         && Physics2D.Raycast(secondaryWallCheck.position, Vector2.right * facingDir, wallCheckDistance, whatIsGround);
@@ -84,7 +89,10 @@ public class Entity : MonoBehaviour
     {
         Gizmos.color = Color.red;
 
-        Gizmos.DrawLine(groundCheck.position, groundCheck.position + new Vector3(0, -groundCheckDistance));
+        if (groundCheck != null)
+        {
+            Gizmos.DrawLine(groundCheck.position, groundCheck.position + new Vector3(0, -groundCheckDistance));
+        }
 
         if (primaryWallCheck != null)
         {

@@ -16,6 +16,7 @@ public class Player : Entity
     public PlayerJumpAttackState jumpAttackState { get; private set; }
 
     public Vector2 moveInput { get; private set; }
+    public bool movementEnabled { get; private set; } = true;
 
     [Header("Attack Details")]
     public Vector2[] attackVelocity;
@@ -57,12 +58,16 @@ public class Player : Entity
         input.Enable();
 
         // Keep the latest movement input available to every player state.
-        input.Player.Movement.performed += ctx => moveInput = ctx.ReadValue<Vector2>();
-        input.Player.Movement.canceled += ctx => moveInput = Vector2.zero;
+        input.Player.Movement.performed += OnMovementPerformed;
+        input.Player.Movement.canceled += OnMovementCanceled;
+
+        ApplyMovementInputState();
     }
 
     private void OnDisable()
     {
+        input.Player.Movement.performed -= OnMovementPerformed;
+        input.Player.Movement.canceled -= OnMovementCanceled;
         input.Disable();
     }
 
@@ -86,5 +91,57 @@ public class Player : Entity
         }
 
         queuedAttackCo = StartCoroutine(EnterAttackStateWithDelayedCo());
+    }
+
+    public void SetMovementEnabled(bool enabled)
+    {
+        movementEnabled = enabled;
+
+        if (!movementEnabled)
+        {
+            moveInput = Vector2.zero;
+            SetVelocity(0, rb.linearVelocity.y);
+            stateMachine.ChangeState(idleState);
+        }
+
+        ApplyMovementInputState();
+    }
+
+    private void ApplyMovementInputState()
+    {
+        if (input == null)
+        {
+            return;
+        }
+
+        if (movementEnabled)
+        {
+            input.Player.Movement.Enable();
+            input.Player.Jump.Enable();
+            input.Player.Dash.Enable();
+            input.Player.Attack.Enable();
+        }
+        else
+        {
+            input.Player.Movement.Disable();
+            input.Player.Jump.Disable();
+            input.Player.Dash.Disable();
+            input.Player.Attack.Disable();
+        }
+    }
+
+    private void OnMovementPerformed(UnityEngine.InputSystem.InputAction.CallbackContext ctx)
+    {
+        if (!movementEnabled)
+        {
+            return;
+        }
+
+        moveInput = ctx.ReadValue<Vector2>();
+    }
+
+    private void OnMovementCanceled(UnityEngine.InputSystem.InputAction.CallbackContext ctx)
+    {
+        moveInput = Vector2.zero;
     }
 }
