@@ -1,0 +1,59 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0bcd858fa11131d49926fd36c185d21c, type: 3}
+  m_Name: MiraBrotherReward
+  m_EditorClassIdentifier: Assembly-CSharp::DialogueText
+  dialogueId: mira_brother_reward
+  speakerName: Elizabeth
+  canBeSelectedByAI: 1
+  startNodeId: 1
+  nodes:
+  - nodeId: 1
+    speakerNameOverride: 
+    text: Hi!
+    nextNodeId: 2
+    endsConversationAfterThisLine: 0
+    triggerId: 
+    choices: []
+    canBeSelectedByAI: 0
+  - nodeId: 2
+    speakerNameOverride: 
+    text: Lovely day, isn't it?
+    nextNodeId: 
+    endsConversationAfterThisLine: 0
+    triggerId: 
+    choices:
+    - optionText: Yes, it is!
+      triggerId: 
+      nextNodeId: 3
+      endsConversationAfterThisLine: 0
+    - optionText: Are you stupid?
+      triggerId: 
+      nextNodeId: 4
+      endsConversationAfterThisLine: 0
+    canBeSelectedByAI: 0
+  - nodeId: 3
+    speakerNameOverride: 
+    text: I know right?
+    nextNodeId: 
+    endsConversationAfterThisLine: 1
+    triggerId: 
+    choices: []
+    canBeSelectedByAI: 0
+  - nodeId: 4
+    speakerNameOverride: 
+    text: Are YOU stupid?!
+    nextNodeId: 
+    endsConversationAfterThisLine: 1
+    triggerId: 
+    choices: []
+    canBeSelectedByAI: 0

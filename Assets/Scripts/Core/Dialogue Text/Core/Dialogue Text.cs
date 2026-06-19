@@ -5,7 +5,13 @@ using System;
 [CreateAssetMenu(menuName = "Dialogue/New Dialogue Container")]
 public class DialogueText : ScriptableObject
 {
+    
+    [Header("Identity")]
+    public string dialogueId;
+
     public string speakerName;
+
+    public bool canBeSelectedByAI = true;
 
     [Tooltip("Optional. If empty, dialogue starts at the first node.")]
     public string startNodeId;
@@ -33,6 +39,9 @@ public class DialogueNode
 
     [Header("Choices")]
     public List<DialogueChoice> choices = new List<DialogueChoice>();
+
+    [Header("AI Routing")]
+    public bool canBeSelectedByAI;
 }
 
 [Serializable]

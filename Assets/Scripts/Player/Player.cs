@@ -107,6 +107,30 @@ public class Player : Entity
         ApplyMovementInputState();
     }
 
+    public PlayerStateSnapshot BuildStateSnapshot(
+        string currentLocationId,
+        string[] activeQuestFlags,
+        string[] completedQuestFlags,
+        string[] inventoryItemIds,
+        InventoryItemSnapshot[] inventoryItems)
+    {
+        Vector3 position = transform.position;
+
+        return new PlayerStateSnapshot
+        {
+            currentLocationId = currentLocationId,
+            playerX = position.x,
+            playerY = position.y,
+            moveInputX = moveInput.x,
+            moveInputY = moveInput.y,
+            movementEnabled = movementEnabled,
+            activeQuestFlags = activeQuestFlags ?? new string[0],
+            completedQuestFlags = completedQuestFlags ?? new string[0],
+            inventoryItemIds = inventoryItemIds ?? new string[0],
+            inventoryItems = inventoryItems ?? new InventoryItemSnapshot[0]
+        };
+    }
+
     private void ApplyMovementInputState()
     {
         if (input == null)

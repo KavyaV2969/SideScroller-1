@@ -10,9 +10,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0bcd858fa11131d49926fd36c185d21c, type: 3}
-  m_Name: New Dialogue Text
+  m_Name: MiraGreeting
   m_EditorClassIdentifier: Assembly-CSharp::DialogueText
-  speakerName: Elizabeth
+  dialogueId: mira_greeting
+  speakerName: Mira
+  canBeSelectedByAI: 1
   startNodeId: 1
   nodes:
   - nodeId: 1
@@ -22,6 +24,7 @@ MonoBehaviour:
     endsConversationAfterThisLine: 0
     triggerId: 
     choices: []
+    canBeSelectedByAI: 0
   - nodeId: 2
     speakerNameOverride: 
     text: Lovely day, isn't it?
@@ -37,6 +40,7 @@ MonoBehaviour:
       triggerId: 
       nextNodeId: 4
       endsConversationAfterThisLine: 0
+    canBeSelectedByAI: 0
   - nodeId: 3
     speakerNameOverride: 
     text: I know right?
@@ -44,6 +48,7 @@ MonoBehaviour:
     endsConversationAfterThisLine: 1
     triggerId: 
     choices: []
+    canBeSelectedByAI: 0
   - nodeId: 4
     speakerNameOverride: 
     text: Are YOU stupid?!
@@ -51,3 +56,4 @@ MonoBehaviour:
     endsConversationAfterThisLine: 1
     triggerId: 
     choices: []
+    canBeSelectedByAI: 0

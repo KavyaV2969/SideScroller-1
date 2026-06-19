@@ -20,12 +20,75 @@ public class DialogueController : MonoBehaviour
     [Header("Triggers")]
     public UnityEvent<string> onDialogueTrigger;
 
+    [Header("Free Text Input")]
+    [SerializeField] private GameObject freeTextInputPanel;
+    [SerializeField] private TMP_InputField playerInputField;
+    [SerializeField] private Button submitTextButton;
+
+    public event System.Action<string> OnFreeTextSubmitted;
+
     private DialogueText activeDialogue;
     private readonly Dictionary<string, int> nodeLookup = new Dictionary<string, int>();
 
     private int currentNodeIndex = -1;
     private bool conversationActive;
+    public bool IsConversationActive => conversationActive;
     private bool waitingForChoice;
+
+    private void Awake()
+    {
+        if (submitTextButton != null)
+        {
+            submitTextButton.onClick.AddListener(SubmitFreeTextInput);
+        }
+
+        HideFreeTextInput();
+    }
+
+    public void ShowFreeTextInput()
+    {
+        ClearOptions();
+
+        if (freeTextInputPanel != null)
+        {
+            freeTextInputPanel.SetActive(true);
+        }
+
+        if (playerInputField != null)
+        {
+            playerInputField.text = "";
+            playerInputField.ActivateInputField();
+        }
+
+        SetPlayerMovement(false);
+    }
+
+    public void HideFreeTextInput()
+    {
+        if (freeTextInputPanel != null)
+        {
+            freeTextInputPanel.SetActive(false);
+        }
+    }
+
+    private void SubmitFreeTextInput()
+    {
+        if (playerInputField == null)
+        {
+            return;
+        }
+
+        string input = playerInputField.text.Trim();
+
+        if (string.IsNullOrWhiteSpace(input))
+        {
+            return;
+        }
+
+        HideFreeTextInput();
+
+        OnFreeTextSubmitted?.Invoke(input);
+    }
 
     public void DisplayNextDialogueText(DialogueText dialogueText)
     {
@@ -42,6 +105,47 @@ public class DialogueController : MonoBehaviour
 
         AdvanceFromCurrentNode();
     }
+
+    public void StartDialogue(DialogueText dialogueText)
+    {
+        StartDialogue(dialogueText, null);
+    }
+
+    public void StartDialogue(DialogueText dialogueText, string overrideStartNodeId)
+    {
+        if (dialogueText == null)
+        {
+            Debug.LogWarning("Tried to start null dialogue.");
+            return;
+        }
+
+        activeDialogue = dialogueText;
+        conversationActive = true;
+        waitingForChoice = false;
+
+        BuildNodeLookup();
+
+        SetPlayerMovement(false);
+
+        if (!gameObject.activeSelf)
+        {
+            gameObject.SetActive(true);
+        }
+
+        int startIndex = GetNodeIndexOrFallback(overrideStartNodeId);
+        ShowNode(startIndex);
+    }
+
+    private int GetNodeIndexOrFallback(string nodeId)
+{
+    if (!string.IsNullOrWhiteSpace(nodeId) &&
+        nodeLookup.TryGetValue(nodeId, out int index))
+    {
+        return index;
+    }
+
+    return GetStartNodeIndex();
+}
 
     private void StartConversation(DialogueText dialogueText)
     {
@@ -154,6 +258,30 @@ public class DialogueController : MonoBehaviour
 
             button.onClick.AddListener(() => SelectChoice(choiceIndex));
         }
+    }
+
+    public void DisplayFreeChatLine(string speakerName, string line)
+    {
+        ClearOptions();
+
+        activeDialogue = null;
+        conversationActive = true;
+        waitingForChoice = false;
+
+        SetPlayerMovement(false);
+
+        if (!gameObject.activeSelf)
+        {
+            gameObject.SetActive(true);
+        }
+
+        NPCNameText.text = speakerName;
+        NPCDialogueText.text = line;
+    }
+
+    private void EndDisplayedFreeChat()
+    {
+        EndConversation();
     }
 
     private void SelectChoice(int choiceIndex)
@@ -295,5 +423,17 @@ public class DialogueController : MonoBehaviour
         {
             player.SetMovementEnabled(enabled);
         }
+    }
+    public void DisplayPendingLine(string speakerName)
+    {
+        ClearOptions();
+
+        if (!gameObject.activeSelf)
+        {
+            gameObject.SetActive(true);
+        }
+
+        NPCNameText.text = speakerName;
+        NPCDialogueText.text = "...";
     }
 }
