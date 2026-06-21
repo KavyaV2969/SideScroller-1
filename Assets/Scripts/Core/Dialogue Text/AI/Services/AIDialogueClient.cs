@@ -5,8 +5,13 @@ using UnityEngine.Networking;
 
 public class AIDialogueClient : MonoBehaviour
 {
+    [Header("Backend")]
     [SerializeField] private string backendUrl = "http://localhost:8000/dialogue/query";
     [SerializeField] private int timeoutSeconds = 10;
+
+    [Header("Mock Testing")]
+    [SerializeField] private bool useMockResponses = true;
+    [SerializeField] private float mockDelaySeconds = 0.5f;
 
     public async Task<AIDialogueResponse> SendDialogueRequest(AIDialogueRequest request)
     {
@@ -16,6 +21,96 @@ public class AIDialogueClient : MonoBehaviour
             return null;
         }
 
+        if (useMockResponses)
+        {
+            return await SendMockDialogueRequest(request);
+        }
+
+        return await SendRealDialogueRequest(request);
+    }
+
+    private async Task<AIDialogueResponse> SendMockDialogueRequest(AIDialogueRequest request)
+    {
+        await Task.Delay(Mathf.RoundToInt(mockDelaySeconds * 1000f));
+
+        string input = request.playerInput.ToLowerInvariant();
+
+        if (input.Contains("brother") || input.Contains("tomas"))
+        {
+            return new AIDialogueResponse
+            {
+                responseType = "intent_route",
+                npcId = request.npcId,
+                intent = "mention_brother_helped",
+                dialogueId = "",
+                startNodeId = "",
+                freeChatText = "",
+                proposedActions = new AIDialogueAction[0],
+                safety = new AISafetyInfo
+                {
+                    blocked = false,
+                    reason = ""
+                }
+            };
+        }
+
+        if (input.Contains("frostwell") || input.Contains("dungeon"))
+        {
+            return new AIDialogueResponse
+            {
+                responseType = "intent_route",
+                npcId = request.npcId,
+                intent = "ask_about_dungeon",
+                dialogueId = "",
+                startNodeId = "",
+                freeChatText = "",
+                proposedActions = new AIDialogueAction[0],
+                safety = new AISafetyInfo
+                {
+                    blocked = false,
+                    reason = ""
+                }
+            };
+        }
+
+        if (input.Contains("ignore") || input.Contains("system") || input.Contains("prompt"))
+        {
+            return new AIDialogueResponse
+            {
+                responseType = "intent_route",
+                npcId = request.npcId,
+                intent = "prompt_injection",
+                dialogueId = "",
+                startNodeId = "",
+                freeChatText = "",
+                proposedActions = new AIDialogueAction[0],
+                safety = new AISafetyInfo
+                {
+                    blocked = false,
+                    reason = ""
+                }
+            };
+        }
+
+        return new AIDialogueResponse
+        {
+            responseType = "intent_route",
+            npcId = request.npcId,
+            intent = "unknown",
+            dialogueId = "",
+            startNodeId = "",
+            freeChatText = "",
+            proposedActions = new AIDialogueAction[0],
+            safety = new AISafetyInfo
+            {
+                blocked = false,
+                reason = ""
+            }
+        };
+    }
+
+    private async Task<AIDialogueResponse> SendRealDialogueRequest(AIDialogueRequest request)
+    {
         string json = JsonUtility.ToJson(request);
 
         using UnityWebRequest webRequest = new UnityWebRequest(backendUrl, "POST");

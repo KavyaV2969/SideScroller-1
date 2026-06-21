@@ -25,7 +25,8 @@ public class DialogueController : MonoBehaviour
     [SerializeField] private TMP_InputField playerInputField;
     [SerializeField] private Button submitTextButton;
 
-    public event System.Action<string> OnFreeTextSubmitted;
+    public event System.Action<string, DialogueText, DialogueNode> OnFreeTextSubmitted;
+    public event System.Action OnConversationEnded;
 
     private DialogueText activeDialogue;
     private readonly Dictionary<string, int> nodeLookup = new Dictionary<string, int>();
@@ -34,6 +35,25 @@ public class DialogueController : MonoBehaviour
     private bool conversationActive;
     public bool IsConversationActive => conversationActive;
     private bool waitingForChoice;
+    private bool waitingForFreeTextInput;
+    private bool waitingForAIResponse;
+
+    public DialogueText ActiveDialogue => activeDialogue;
+
+    public DialogueNode CurrentNode
+    {
+        get
+        {
+            if (activeDialogue == null ||
+                currentNodeIndex < 0 ||
+                currentNodeIndex >= activeDialogue.nodes.Count)
+            {
+                return null;
+            }
+
+            return activeDialogue.nodes[currentNodeIndex];
+        }
+    }
 
     private void Awake()
     {
@@ -45,14 +65,21 @@ public class DialogueController : MonoBehaviour
         HideFreeTextInput();
     }
 
-    public void ShowFreeTextInput()
+    public void ShowFreeTextInput(string speakerName, string promptText)
     {
         ClearOptions();
 
-        if (freeTextInputPanel != null)
-        {
-            freeTextInputPanel.SetActive(true);
-        }
+        conversationActive = true;
+        waitingForChoice = false;
+        waitingForAIResponse = false;
+        waitingForFreeTextInput = true;
+
+        gameObject.SetActive(true);
+
+        NPCNameText.text = speakerName;
+        NPCDialogueText.text = promptText;
+
+        freeTextInputPanel?.SetActive(true);
 
         if (playerInputField != null)
         {
@@ -63,12 +90,15 @@ public class DialogueController : MonoBehaviour
         SetPlayerMovement(false);
     }
 
+    public void ShowFreeTextInput()
+    {
+        ShowFreeTextInput("", "What do you say?");
+    }
+
     public void HideFreeTextInput()
     {
-        if (freeTextInputPanel != null)
-        {
-            freeTextInputPanel.SetActive(false);
-        }
+        freeTextInputPanel?.SetActive(false);
+        waitingForFreeTextInput = false;
     }
 
     private void SubmitFreeTextInput()
@@ -85,9 +115,18 @@ public class DialogueController : MonoBehaviour
             return;
         }
 
+        DialogueText submittedDialogue = activeDialogue;
+        DialogueNode submittedNode = CurrentNode;
+
         HideFreeTextInput();
 
-        OnFreeTextSubmitted?.Invoke(input);
+        waitingForChoice = false;
+        waitingForFreeTextInput = false;
+        waitingForAIResponse = true;
+
+        NPCDialogueText.text = "...";
+
+        OnFreeTextSubmitted?.Invoke(input, submittedDialogue, submittedNode);
     }
 
     public void DisplayNextDialogueText(DialogueText dialogueText)
@@ -98,7 +137,7 @@ public class DialogueController : MonoBehaviour
             return;
         }
 
-        if (waitingForChoice)
+        if (waitingForChoice || waitingForFreeTextInput || waitingForAIResponse)
         {
             return;
         }
@@ -113,63 +152,41 @@ public class DialogueController : MonoBehaviour
 
     public void StartDialogue(DialogueText dialogueText, string overrideStartNodeId)
     {
-        if (dialogueText == null)
+        if (dialogueText == null || dialogueText.nodes == null || dialogueText.nodes.Count == 0)
         {
-            Debug.LogWarning("Tried to start null dialogue.");
+            Debug.LogWarning("Tried to start null or empty dialogue.");
+            EndConversation();
             return;
         }
 
+        HideFreeTextInput();
         activeDialogue = dialogueText;
         conversationActive = true;
         waitingForChoice = false;
+        waitingForFreeTextInput = false;
+        waitingForAIResponse = false;
+        currentNodeIndex = -1;
 
         BuildNodeLookup();
-
         SetPlayerMovement(false);
-
-        if (!gameObject.activeSelf)
-        {
-            gameObject.SetActive(true);
-        }
-
-        int startIndex = GetNodeIndexOrFallback(overrideStartNodeId);
-        ShowNode(startIndex);
+        gameObject.SetActive(true);
+        ShowNode(GetNodeIndexOrFallback(overrideStartNodeId));
     }
 
     private int GetNodeIndexOrFallback(string nodeId)
-{
-    if (!string.IsNullOrWhiteSpace(nodeId) &&
-        nodeLookup.TryGetValue(nodeId, out int index))
     {
-        return index;
-    }
+        if (!string.IsNullOrWhiteSpace(nodeId) &&
+            nodeLookup.TryGetValue(nodeId, out int index))
+        {
+            return index;
+        }
 
-    return GetStartNodeIndex();
-}
+        return GetStartNodeIndex();
+    }
 
     private void StartConversation(DialogueText dialogueText)
     {
-        if (dialogueText == null || dialogueText.nodes == null || dialogueText.nodes.Count == 0)
-        {
-            Debug.LogWarning("DialogueText is empty or missing nodes.");
-            return;
-        }
-
-        activeDialogue = dialogueText;
-        conversationActive = true;
-        waitingForChoice = false;
-
-        BuildNodeLookup();
-
-        SetPlayerMovement(false);
-
-        if (!gameObject.activeSelf)
-        {
-            gameObject.SetActive(true);
-        }
-
-        int startIndex = GetStartNodeIndex();
-        ShowNode(startIndex);
+        StartDialogue(dialogueText);
     }
 
     private void BuildNodeLookup()
@@ -212,13 +229,18 @@ public class DialogueController : MonoBehaviour
 
     private void ShowNode(int nodeIndex)
     {
-        if (nodeIndex < 0 || nodeIndex >= activeDialogue.nodes.Count)
+        if (activeDialogue == null || nodeIndex < 0 || nodeIndex >= activeDialogue.nodes.Count)
         {
             EndConversation();
             return;
         }
 
         ClearOptions();
+        HideFreeTextInput();
+
+        waitingForChoice = false;
+        waitingForFreeTextInput = false;
+        waitingForAIResponse = false;
 
         currentNodeIndex = nodeIndex;
         DialogueNode node = activeDialogue.nodes[currentNodeIndex];
@@ -232,9 +254,40 @@ public class DialogueController : MonoBehaviour
 
         FireTrigger(node.triggerId);
 
-        if (node.choices != null && node.choices.Count > 0)
+        switch (node.inputMode)
         {
-            ShowChoices(node);
+            case DialogueNodeInputMode.Choices:
+                if (node.choices != null && node.choices.Count > 0)
+                {
+                    ShowChoices(node);
+                }
+                break;
+
+            case DialogueNodeInputMode.FreeText:
+                ShowNodeFreeTextInput(speakerName, node.freeTextPrompt);
+                break;
+
+            case DialogueNodeInputMode.Continue:
+            default:
+                break;
+        }
+    }
+
+    private void ShowNodeFreeTextInput(string speakerName, string promptText)
+    {
+        waitingForFreeTextInput = true;
+
+        if (!string.IsNullOrWhiteSpace(promptText))
+        {
+            NPCDialogueText.text = promptText;
+        }
+
+        freeTextInputPanel?.SetActive(true);
+
+        if (playerInputField != null)
+        {
+            playerInputField.text = "";
+            playerInputField.ActivateInputField();
         }
     }
 
@@ -263,10 +316,14 @@ public class DialogueController : MonoBehaviour
     public void DisplayFreeChatLine(string speakerName, string line)
     {
         ClearOptions();
+        HideFreeTextInput();
 
         activeDialogue = null;
         conversationActive = true;
         waitingForChoice = false;
+        waitingForFreeTextInput = false;
+        waitingForAIResponse = false;
+        currentNodeIndex = -1;
 
         SetPlayerMovement(false);
 
@@ -322,7 +379,18 @@ public class DialogueController : MonoBehaviour
 
     private void AdvanceFromCurrentNode()
     {
-        if (!conversationActive || currentNodeIndex < 0)
+        if (!conversationActive)
+        {
+            return;
+        }
+
+        if (activeDialogue == null)
+        {
+            EndConversation();
+            return;
+        }
+
+        if (currentNodeIndex < 0)
         {
             return;
         }
@@ -390,11 +458,14 @@ public class DialogueController : MonoBehaviour
     private void EndConversation()
     {
         ClearOptions();
+        HideFreeTextInput();
 
         activeDialogue = null;
         currentNodeIndex = -1;
         conversationActive = false;
         waitingForChoice = false;
+        waitingForFreeTextInput = false;
+        waitingForAIResponse = false;
 
         SetPlayerMovement(true);
 
@@ -402,14 +473,13 @@ public class DialogueController : MonoBehaviour
         {
             gameObject.SetActive(false);
         }
+
+        OnConversationEnded?.Invoke();
     }
 
     private void OnDisable()
     {
-        if (conversationActive)
-        {
-            SetPlayerMovement(true);
-        }
+        SetPlayerMovement(true);
     }
 
     private void SetPlayerMovement(bool enabled)
@@ -427,13 +497,110 @@ public class DialogueController : MonoBehaviour
     public void DisplayPendingLine(string speakerName)
     {
         ClearOptions();
+        HideFreeTextInput();
 
-        if (!gameObject.activeSelf)
-        {
-            gameObject.SetActive(true);
-        }
+        conversationActive = true;
+        waitingForChoice = false;
+        waitingForFreeTextInput = false;
+        waitingForAIResponse = true;
+
+        SetPlayerMovement(false);
+        gameObject.SetActive(true);
 
         NPCNameText.text = speakerName;
         NPCDialogueText.text = "...";
+    }
+
+    public bool TryRouteCurrentNodeByIntent(string intent, GameStateProvider gameStateProvider)
+    {
+        waitingForAIResponse = false;
+
+        DialogueNode node = CurrentNode;
+
+        if (node == null)
+        {
+            Debug.LogWarning("Cannot route intent because there is no current dialogue node.");
+            EndConversation();
+            return false;
+        }
+
+        DialogueIntentRoute route = FindIntentRoute(node, intent);
+
+        if (route == null)
+        {
+            return RouteToUnknownIntentNode(node);
+        }
+
+        if (!IsRouteAllowed(route, gameStateProvider))
+        {
+            Debug.LogWarning($"Intent route blocked by conditions. Intent: {intent}");
+            return RouteToUnknownIntentNode(node);
+        }
+
+        if (string.IsNullOrWhiteSpace(route.nextNodeId))
+        {
+            Debug.LogWarning($"Intent route has no next node. Intent: {intent}");
+            return RouteToUnknownIntentNode(node);
+        }
+
+        JumpToNode(route.nextNodeId);
+        return true;
+    }
+
+    private DialogueIntentRoute FindIntentRoute(DialogueNode node, string intent)
+    {
+        if (node.intentRoutes == null || string.IsNullOrWhiteSpace(intent))
+        {
+            return null;
+        }
+
+        foreach (DialogueIntentRoute route in node.intentRoutes)
+        {
+            if (route != null && route.intent == intent)
+            {
+                return route;
+            }
+        }
+
+        return null;
+    }
+
+    private bool RouteToUnknownIntentNode(DialogueNode node)
+    {
+        if (!string.IsNullOrWhiteSpace(node.unknownIntentNodeId))
+        {
+            JumpToNode(node.unknownIntentNodeId);
+            return true;
+        }
+
+        Debug.LogWarning("No matching intent route and no unknownIntentNodeId set.");
+        EndConversation();
+        return false;
+    }
+
+    private bool IsRouteAllowed(DialogueIntentRoute route, GameStateProvider gameStateProvider)
+    {
+        if (route == null)
+        {
+            return false;
+        }
+
+        if (!string.IsNullOrWhiteSpace(route.requiredFlag))
+        {
+            if (gameStateProvider == null || !gameStateProvider.HasFlag(route.requiredFlag))
+            {
+                return false;
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(route.blockedByFlag))
+        {
+            if (gameStateProvider != null && gameStateProvider.HasFlag(route.blockedByFlag))
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

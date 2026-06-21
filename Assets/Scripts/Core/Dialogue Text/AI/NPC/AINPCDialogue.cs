@@ -6,7 +6,8 @@ public class AINPCDialogue : MonoBehaviour, IInteractable
     [SerializeField] private string npcId;
     [SerializeField] private string displayName;
 
-    [Header("Fallback")]
+    [Header("Dialogue")]
+    [SerializeField] private DialogueText entryDialogue;
     [SerializeField] private DialogueText fallbackDialogue;
 
     [Header("References")]
@@ -15,6 +16,7 @@ public class AINPCDialogue : MonoBehaviour, IInteractable
 
     public string NpcId => npcId;
     public string DisplayName => displayName;
+    public DialogueText EntryDialogue => entryDialogue;
     public DialogueText FallbackDialogue => fallbackDialogue;
 
     public void Interact()
@@ -30,24 +32,61 @@ public class AINPCDialogue : MonoBehaviour, IInteractable
             return;
         }
 
-        dialogueController.ShowFreeTextInput();
+        if (entryDialogue == null)
+        {
+            Debug.LogWarning($"{name} has no entry dialogue assigned.");
+            PlayFallback();
+            return;
+        }
+
+        dialogueController.OnFreeTextSubmitted -= HandleFreeTextSubmitted;
         dialogueController.OnFreeTextSubmitted += HandleFreeTextSubmitted;
+
+        dialogueController.OnConversationEnded -= HandleConversationEnded;
+        dialogueController.OnConversationEnded += HandleConversationEnded;
+
+        dialogueController.StartDialogue(entryDialogue);
     }
 
-    private void HandleFreeTextSubmitted(string playerInput)
+    private void HandleFreeTextSubmitted(string playerInput, DialogueText dialogueText, DialogueNode node)
     {
-        dialogueController.OnFreeTextSubmitted -= HandleFreeTextSubmitted;
+        aiDialogueService.SubmitPlayerText(this, playerInput, dialogueText, node);
+    }
 
-        dialogueController.DisplayPendingLine(displayName);
+    private void HandleConversationEnded()
+    {
+        Unsubscribe();
+    }
 
-        aiDialogueService.SubmitPlayerText(this, playerInput);
+    private void PlayFallback()
+    {
+        if (dialogueController == null)
+        {
+            return;
+        }
+
+        if (fallbackDialogue != null)
+        {
+            dialogueController.StartDialogue(fallbackDialogue);
+            return;
+        }
+
+        dialogueController.DisplayFreeChatLine(displayName, "I do not know what to say to that.");
     }
 
     private void OnDisable()
     {
-        if (dialogueController != null)
+        Unsubscribe();
+    }
+
+    private void Unsubscribe()
+    {
+        if (dialogueController == null)
         {
-            dialogueController.OnFreeTextSubmitted -= HandleFreeTextSubmitted;
+            return;
         }
+
+        dialogueController.OnFreeTextSubmitted -= HandleFreeTextSubmitted;
+        dialogueController.OnConversationEnded -= HandleConversationEnded;
     }
 }

@@ -11,7 +11,7 @@ public class DialogueText : ScriptableObject
 
     public string speakerName;
 
-    public bool canBeSelectedByAI = true;
+    public bool canBeSelectedByAI = false;
 
     [Tooltip("Optional. If empty, dialogue starts at the first node.")]
     public string startNodeId;
@@ -30,6 +30,12 @@ public class DialogueNode
     [TextArea(3, 8)]
     public string text;
 
+    [Header("Input Mode")]
+    public DialogueNodeInputMode inputMode = DialogueNodeInputMode.Continue;
+
+    [Tooltip("Shown when this node expects typed player input.")]
+    public string freeTextPrompt = "What do you say?";
+
     [Header("Flow")]
     public string nextNodeId;
     public bool endsConversationAfterThisLine;
@@ -40,8 +46,11 @@ public class DialogueNode
     [Header("Choices")]
     public List<DialogueChoice> choices = new List<DialogueChoice>();
 
-    [Header("AI Routing")]
-    public bool canBeSelectedByAI;
+    [Header("AI Intent Routes")]
+    public List<DialogueIntentRoute> intentRoutes = new List<DialogueIntentRoute>();
+
+    [Tooltip("Fallback node if classifier returns unknown or no route matches.")]
+    public string unknownIntentNodeId;
 }
 
 [Serializable]
@@ -51,4 +60,22 @@ public class DialogueChoice
     public string triggerId;
     public string nextNodeId;
     public bool endsConversationAfterThisLine;
+}
+
+public enum DialogueNodeInputMode
+{
+    Continue,
+    Choices,
+    FreeText
+}
+
+[Serializable]
+public class DialogueIntentRoute
+{
+    public string intent;
+    public string nextNodeId;
+
+    [Header("Optional Route Conditions")]
+    public string requiredFlag;
+    public string blockedByFlag;
 }

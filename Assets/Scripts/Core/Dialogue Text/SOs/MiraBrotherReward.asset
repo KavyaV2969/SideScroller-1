@@ -13,47 +13,24 @@ MonoBehaviour:
   m_Name: MiraBrotherReward
   m_EditorClassIdentifier: Assembly-CSharp::DialogueText
   dialogueId: mira_brother_reward
-  speakerName: Elizabeth
+  speakerName: Mira
   canBeSelectedByAI: 1
   startNodeId: 1
   nodes:
   - nodeId: 1
     speakerNameOverride: 
-    text: Hi!
+    text: You helped Tomas? Then... thank you. I do not have much, but please take
+      this.
     nextNodeId: 2
     endsConversationAfterThisLine: 0
     triggerId: 
     choices: []
-    canBeSelectedByAI: 0
+    canBeSelectedByAI: 1
   - nodeId: 2
     speakerNameOverride: 
-    text: Lovely day, isn't it?
-    nextNodeId: 
-    endsConversationAfterThisLine: 0
-    triggerId: 
-    choices:
-    - optionText: Yes, it is!
-      triggerId: 
-      nextNodeId: 3
-      endsConversationAfterThisLine: 0
-    - optionText: Are you stupid?
-      triggerId: 
-      nextNodeId: 4
-      endsConversationAfterThisLine: 0
-    canBeSelectedByAI: 0
-  - nodeId: 3
-    speakerNameOverride: 
-    text: I know right?
+    text: I will not forget this.
     nextNodeId: 
     endsConversationAfterThisLine: 1
     triggerId: 
     choices: []
-    canBeSelectedByAI: 0
-  - nodeId: 4
-    speakerNameOverride: 
-    text: Are YOU stupid?!
-    nextNodeId: 
-    endsConversationAfterThisLine: 1
-    triggerId: 
-    choices: []
-    canBeSelectedByAI: 0
+    canBeSelectedByAI: 1

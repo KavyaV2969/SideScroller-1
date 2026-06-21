@@ -5,18 +5,23 @@ public class AIDialogueService : MonoBehaviour
     [Header("Core References")]
     [SerializeField] private AIDialogueClient client;
     [SerializeField] private DialogueController dialogueController;
-    [SerializeField] private DialogueResponseDatabase responseDatabase;
     [SerializeField] private GameStateProvider gameStateProvider;
 
-    [Header("Validation")]
-    [SerializeField] private DialogueActionValidator actionValidator;
-    [SerializeField] private DialogueActionExecutor actionExecutor;
-
-    public async void SubmitPlayerText(AINPCDialogue npc, string playerInput)
-    {
+    public async void SubmitPlayerText(
+        AINPCDialogue npc,
+        string playerInput,
+        DialogueText currentDialogue,
+        DialogueNode currentNode
+    ) {
         if (npc == null)
         {
             Debug.LogWarning("AIDialogueService received null NPC.");
+            return;
+        }
+
+        if (dialogueController == null)
+        {
+            Debug.LogWarning("AIDialogueService has no DialogueController assigned.");
             return;
         }
 
@@ -37,21 +42,31 @@ public class AIDialogueService : MonoBehaviour
         {
             npcId = npc.NpcId,
             playerInput = playerInput,
-            requestedMode = "auto",
+            requestedMode = "intent_route",
+            currentDialogueId = currentDialogue != null ? currentDialogue.dialogueId : "",
+            currentNodeId = currentNode != null ? currentNode.nodeId : "",
             playerState = gameStateProvider != null
                 ? gameStateProvider.BuildSnapshotForNPC(npc.NpcId)
                 : new PlayerStateSnapshot()
         };
 
-        AIDialogueResponse response = await client.SendDialogueRequest(request);
-
-        if (response == null)
+        try
         {
-            PlayFallback(npc);
-            return;
-        }
+            AIDialogueResponse response = await client.SendDialogueRequest(request);
 
-        HandleResponse(npc, response);
+            if (response == null)
+            {
+                PlayFallback(npc);
+                return;
+            }
+
+            HandleResponse(npc, response);
+        }
+        catch (System.Exception exception)
+        {
+            Debug.LogWarning($"AI dialogue flow failed: {exception.Message}");
+            PlayFallback(npc);
+        }
     }
 
     private void HandleResponse(AINPCDialogue npc, AIDialogueResponse response)
@@ -71,85 +86,25 @@ public class AIDialogueService : MonoBehaviour
 
         switch (response.responseType)
         {
-            case "authored_dialogue":
-                HandleAuthoredDialogueResponse(npc, response);
-                break;
-
-            case "free_chat":
-                HandleFreeChatResponse(npc, response);
-                break;
-
-            case "fallback":
-                PlayFallback(npc);
+            case "intent_route":
+                HandleIntentRouteResponse(npc, response);
                 break;
 
             default:
-                Debug.LogWarning($"Unknown AI dialogue responseType: {response.responseType}");
+                Debug.LogWarning($"Rejected non-routing AI responseType: {response.responseType}");
                 PlayFallback(npc);
                 break;
         }
-    }
-
-    private void HandleAuthoredDialogueResponse(AINPCDialogue npc, AIDialogueResponse response)
-    {
-        if (responseDatabase == null)
-        {
-            Debug.LogWarning("No DialogueResponseDatabase assigned.");
-            PlayFallback(npc);
-            return;
-        }
-
-        DialogueText dialogueText = responseDatabase.GetDialogueById(response.dialogueId);
-
-        if (dialogueText == null)
-        {
-            PlayFallback(npc);
-            return;
-        }
-
-        if (!dialogueText.canBeSelectedByAI)
-        {
-            Debug.LogWarning($"DialogueText is not AI-selectable: {dialogueText.name}");
-            PlayFallback(npc);
-            return;
-        }
-
-        bool actionsValid = actionValidator == null || actionValidator.AreActionsValid(npc.NpcId, response);
-
-        if (!actionsValid)
-        {
-            PlayFallback(npc);
-            return;
-        }
-
-        dialogueController.StartDialogue(dialogueText, response.startNodeId);
-
-        if (actionExecutor != null)
-        {
-            actionExecutor.Execute(response.proposedActions);
-        }
-    }
-
-    private void HandleFreeChatResponse(AINPCDialogue npc, AIDialogueResponse response)
-    {
-        if (response.proposedActions != null && response.proposedActions.Length > 0)
-        {
-            Debug.LogWarning("Free-chat response included actions. Rejected.");
-            PlayFallback(npc);
-            return;
-        }
-
-        if (string.IsNullOrWhiteSpace(response.freeChatText))
-        {
-            PlayFallback(npc);
-            return;
-        }
-
-        dialogueController.DisplayFreeChatLine(npc.DisplayName, response.freeChatText);
     }
 
     private void PlayFallback(AINPCDialogue npc)
     {
+        if (dialogueController == null)
+        {
+            Debug.LogWarning("Cannot play fallback because DialogueController is not assigned.");
+            return;
+        }
+
         if (npc.FallbackDialogue != null)
         {
             dialogueController.StartDialogue(npc.FallbackDialogue);
@@ -157,5 +112,32 @@ public class AIDialogueService : MonoBehaviour
         }
 
         dialogueController.DisplayFreeChatLine(npc.DisplayName, "I do not know what to say to that.");
+    }
+
+    private void HandleIntentRouteResponse(AINPCDialogue npc, AIDialogueResponse response)
+    {
+        if (response.proposedActions != null && response.proposedActions.Length > 0)
+        {
+            Debug.LogWarning("Intent-route response included actions. Rejected.");
+            PlayFallback(npc);
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(response.intent))
+        {
+            Debug.LogWarning("Intent-route response had no intent.");
+            PlayFallback(npc);
+            return;
+        }
+
+        bool routed = dialogueController.TryRouteCurrentNodeByIntent(
+            response.intent,
+            gameStateProvider
+        );
+
+        if (!routed)
+        {
+            PlayFallback(npc);
+        }
     }
 }

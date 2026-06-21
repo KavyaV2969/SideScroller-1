@@ -13,45 +13,13 @@ MonoBehaviour:
   m_Name: MiraRedirect
   m_EditorClassIdentifier: Assembly-CSharp::DialogueText
   dialogueId: mira_redirect
-  speakerName: Elizabeth
+  speakerName: Mira
   canBeSelectedByAI: 1
   startNodeId: 1
   nodes:
   - nodeId: 1
     speakerNameOverride: 
-    text: Hi!
-    nextNodeId: 2
-    endsConversationAfterThisLine: 0
-    triggerId: 
-    choices: []
-    canBeSelectedByAI: 0
-  - nodeId: 2
-    speakerNameOverride: 
-    text: Lovely day, isn't it?
-    nextNodeId: 
-    endsConversationAfterThisLine: 0
-    triggerId: 
-    choices:
-    - optionText: Yes, it is!
-      triggerId: 
-      nextNodeId: 3
-      endsConversationAfterThisLine: 0
-    - optionText: Are you stupid?
-      triggerId: 
-      nextNodeId: 4
-      endsConversationAfterThisLine: 0
-    canBeSelectedByAI: 0
-  - nodeId: 3
-    speakerNameOverride: 
-    text: I know right?
-    nextNodeId: 
-    endsConversationAfterThisLine: 1
-    triggerId: 
-    choices: []
-    canBeSelectedByAI: 0
-  - nodeId: 4
-    speakerNameOverride: 
-    text: Are YOU stupid?!
+    text: I do not understand. Were you asking about the village?
     nextNodeId: 
     endsConversationAfterThisLine: 1
     triggerId: 

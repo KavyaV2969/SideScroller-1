@@ -1,0 +1,118 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0bcd858fa11131d49926fd36c185d21c, type: 3}
+  m_Name: MiraMain
+  m_EditorClassIdentifier: Assembly-CSharp::DialogueText
+  dialogueId: mira_main
+  speakerName: Mira
+  canBeSelectedByAI: 0
+  startNodeId: greeting
+  nodes:
+  - nodeId: greeting
+    speakerNameOverride: 
+    text: Good day. Are you looking for someone?
+    inputMode: 0
+    freeTextPrompt: What do you say?
+    nextNodeId: ask_input
+    endsConversationAfterThisLine: 0
+    triggerId: 
+    choices: []
+    intentRoutes: []
+    unknownIntentNodeId: 
+  - nodeId: ask_input
+    speakerNameOverride: 
+    text: You may ask, though I know little beyond the village.
+    inputMode: 2
+    freeTextPrompt: What do you ask Mira?
+    nextNodeId: ask_input
+    endsConversationAfterThisLine: 0
+    triggerId: 
+    choices: []
+    intentRoutes:
+    - intent: mention_brother_helped
+      nextNodeId: reward_thanks
+      requiredFlag: helped_tomas
+      blockedByFlag: lass_reward_claimed
+    - intent: ask_about_dungeon
+      nextNodeId: frostwell_reply
+      requiredFlag: 
+      blockedByFlag: 
+    - intent: prompt_injection
+      nextNodeId: redirect
+      requiredFlag: 
+      blockedByFlag: 
+    - intent: unknown
+      nextNodeId: unknown_reply
+      requiredFlag: 
+      blockedByFlag: 
+    unknownIntentNodeId: unknown_reply
+  - nodeId: reward_thanks
+    speakerNameOverride: 
+    text: You helped Tomas? Then... thank you. I do not have much, but please take
+      this.
+    inputMode: 0
+    freeTextPrompt: What do you ask Mira?
+    nextNodeId: 
+    endsConversationAfterThisLine: 1
+    triggerId: mira_reward_claim
+    choices: []
+    intentRoutes:
+    - intent: mention_brother_helped
+      nextNodeId: reward_thanks
+      requiredFlag: helped_tomas
+      blockedByFlag: lass_reward_claimed
+    - intent: ask_about_dungeon
+      nextNodeId: frostwell_reply
+      requiredFlag: 
+      blockedByFlag: 
+    - intent: prompt_injection
+      nextNodeId: redirect
+      requiredFlag: 
+      blockedByFlag: 
+    - intent: unknown
+      nextNodeId: unknown_reply
+      requiredFlag: 
+      blockedByFlag: 
+    unknownIntentNodeId: unknown_reply
+  - nodeId: frostwell_reply
+    speakerNameOverride: 
+    text: Even the hunters lower their voices when they speak of Frostwell.
+    inputMode: 0
+    freeTextPrompt: What do you ask Mira?
+    nextNodeId: 
+    endsConversationAfterThisLine: 1
+    triggerId: 
+    choices: []
+    intentRoutes: []
+    unknownIntentNodeId: unknown_reply
+  - nodeId: redirect
+    speakerNameOverride: 
+    text: I do not understand. Were you asking about the village?
+    inputMode: 0
+    freeTextPrompt: What do you ask Mira?
+    nextNodeId: 
+    endsConversationAfterThisLine: 1
+    triggerId: 
+    choices: []
+    intentRoutes: []
+    unknownIntentNodeId: unknown_reply
+  - nodeId: unknown_reply
+    speakerNameOverride: 
+    text: I am not sure what to say to that.
+    inputMode: 0
+    freeTextPrompt: What do you ask Mira?
+    nextNodeId: 
+    endsConversationAfterThisLine: 1
+    triggerId: 
+    choices: []
+    intentRoutes: []
+    unknownIntentNodeId: unknown_reply

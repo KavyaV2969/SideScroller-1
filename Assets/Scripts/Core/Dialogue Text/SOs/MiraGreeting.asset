@@ -19,7 +19,7 @@ MonoBehaviour:
   nodes:
   - nodeId: 1
     speakerNameOverride: 
-    text: Hi!
+    text: Welcome!
     nextNodeId: 2
     endsConversationAfterThisLine: 0
     triggerId: 
@@ -27,23 +27,23 @@ MonoBehaviour:
     canBeSelectedByAI: 0
   - nodeId: 2
     speakerNameOverride: 
-    text: Lovely day, isn't it?
+    text: Are you looking for someone?
     nextNodeId: 
     endsConversationAfterThisLine: 0
     triggerId: 
     choices:
-    - optionText: Yes, it is!
+    - optionText: Yes
       triggerId: 
       nextNodeId: 3
       endsConversationAfterThisLine: 0
-    - optionText: Are you stupid?
+    - optionText: No
       triggerId: 
       nextNodeId: 4
       endsConversationAfterThisLine: 0
     canBeSelectedByAI: 0
   - nodeId: 3
     speakerNameOverride: 
-    text: I know right?
+    text: I may be able to help?
     nextNodeId: 
     endsConversationAfterThisLine: 1
     triggerId: 
@@ -51,7 +51,7 @@ MonoBehaviour:
     canBeSelectedByAI: 0
   - nodeId: 4
     speakerNameOverride: 
-    text: Are YOU stupid?!
+    text: Oh that's alright!
     nextNodeId: 
     endsConversationAfterThisLine: 1
     triggerId: 
