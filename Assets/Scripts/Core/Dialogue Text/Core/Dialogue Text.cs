@@ -27,14 +27,29 @@ public class DialogueNode
 
     public string speakerNameOverride;
 
+    [Header("Content")]
+    public DialogueNodeContentMode contentMode = DialogueNodeContentMode.Authored;
+
     [TextArea(3, 8)]
     public string text;
+
+    [Header("Generated Response")]
+    public string generatedResponseRequestId;
+    public string generatedFallbackText = "I do not know enough to answer that.";
+    public int maxGeneratedCharacters = 240;
+    public bool generatedResponseEndsConversation = true;
 
     [Header("Input Mode")]
     public DialogueNodeInputMode inputMode = DialogueNodeInputMode.Continue;
 
     [Tooltip("Shown when this node expects typed player input.")]
     public string freeTextPrompt = "What do you say?";
+
+    [Header("Free Text Handling")]
+    public FreeTextSubmitMode freeTextSubmitMode = FreeTextSubmitMode.IntentRoute;
+
+    [Tooltip("Used when Free Text Submit Mode is DirectNode.")]
+    public string directFreeTextTargetNodeId;
 
     [Header("Flow")]
     public string nextNodeId;
@@ -67,6 +82,18 @@ public enum DialogueNodeInputMode
     Continue,
     Choices,
     FreeText
+}
+
+public enum DialogueNodeContentMode
+{
+    Authored,
+    GeneratedResponse
+}
+
+public enum FreeTextSubmitMode
+{
+    IntentRoute,
+    DirectNode
 }
 
 [Serializable]

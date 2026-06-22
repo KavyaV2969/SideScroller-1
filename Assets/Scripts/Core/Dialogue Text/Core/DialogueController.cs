@@ -26,6 +26,7 @@ public class DialogueController : MonoBehaviour
     [SerializeField] private Button submitTextButton;
 
     public event System.Action<string, DialogueText, DialogueNode> OnFreeTextSubmitted;
+    public event System.Action<DialogueText, DialogueNode, string> OnGeneratedResponseRequested;
     public event System.Action OnConversationEnded;
 
     private DialogueText activeDialogue;
@@ -37,6 +38,7 @@ public class DialogueController : MonoBehaviour
     private bool waitingForChoice;
     private bool waitingForFreeTextInput;
     private bool waitingForAIResponse;
+    private string lastSubmittedFreeText;
 
     public DialogueText ActiveDialogue => activeDialogue;
 
@@ -118,6 +120,8 @@ public class DialogueController : MonoBehaviour
         DialogueText submittedDialogue = activeDialogue;
         DialogueNode submittedNode = CurrentNode;
 
+        lastSubmittedFreeText = input;
+
         HideFreeTextInput();
 
         waitingForChoice = false;
@@ -125,6 +129,20 @@ public class DialogueController : MonoBehaviour
         waitingForAIResponse = true;
 
         NPCDialogueText.text = "...";
+
+        if (submittedNode != null &&
+            submittedNode.freeTextSubmitMode == FreeTextSubmitMode.DirectNode)
+        {
+            if (string.IsNullOrWhiteSpace(submittedNode.directFreeTextTargetNodeId))
+            {
+                Debug.LogWarning("FreeText DirectNode mode has no target node id.");
+                EndConversation();
+                return;
+            }
+
+            JumpToNode(submittedNode.directFreeTextTargetNodeId);
+            return;
+        }
 
         OnFreeTextSubmitted?.Invoke(input, submittedDialogue, submittedNode);
     }
@@ -166,6 +184,7 @@ public class DialogueController : MonoBehaviour
         waitingForFreeTextInput = false;
         waitingForAIResponse = false;
         currentNodeIndex = -1;
+        lastSubmittedFreeText = "";
 
         BuildNodeLookup();
         SetPlayerMovement(false);
@@ -245,6 +264,12 @@ public class DialogueController : MonoBehaviour
         currentNodeIndex = nodeIndex;
         DialogueNode node = activeDialogue.nodes[currentNodeIndex];
 
+        if (node.contentMode == DialogueNodeContentMode.GeneratedResponse)
+        {
+            ShowGeneratedResponseNode(node);
+            return;
+        }
+
         string speakerName = string.IsNullOrWhiteSpace(node.speakerNameOverride)
             ? activeDialogue.speakerName
             : node.speakerNameOverride;
@@ -271,6 +296,25 @@ public class DialogueController : MonoBehaviour
             default:
                 break;
         }
+    }
+
+    private void ShowGeneratedResponseNode(DialogueNode node)
+    {
+        ClearOptions();
+        HideFreeTextInput();
+
+        waitingForChoice = false;
+        waitingForFreeTextInput = false;
+        waitingForAIResponse = true;
+
+        string speakerName = string.IsNullOrWhiteSpace(node.speakerNameOverride)
+            ? activeDialogue.speakerName
+            : node.speakerNameOverride;
+
+        NPCNameText.text = speakerName;
+        NPCDialogueText.text = "...";
+
+        OnGeneratedResponseRequested?.Invoke(activeDialogue, node, lastSubmittedFreeText);
     }
 
     private void ShowNodeFreeTextInput(string speakerName, string promptText)
@@ -334,6 +378,35 @@ public class DialogueController : MonoBehaviour
 
         NPCNameText.text = speakerName;
         NPCDialogueText.text = line;
+    }
+
+    public void DisplayGeneratedResponseLine(string speakerName, string line)
+    {
+        ClearOptions();
+        HideFreeTextInput();
+
+        activeDialogue = null;
+        currentNodeIndex = -1;
+        conversationActive = true;
+        waitingForChoice = false;
+        waitingForFreeTextInput = false;
+        waitingForAIResponse = false;
+
+        SetPlayerMovement(false);
+        gameObject.SetActive(true);
+
+        NPCNameText.text = speakerName;
+        NPCDialogueText.text = SanitizeGeneratedText(line);
+    }
+
+    private string SanitizeGeneratedText(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return "";
+        }
+
+        return text.Replace("<", "").Replace(">", "").Trim();
     }
 
     private void EndDisplayedFreeChat()
@@ -466,6 +539,7 @@ public class DialogueController : MonoBehaviour
         waitingForChoice = false;
         waitingForFreeTextInput = false;
         waitingForAIResponse = false;
+        lastSubmittedFreeText = "";
 
         SetPlayerMovement(true);
 

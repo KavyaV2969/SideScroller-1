@@ -7,6 +7,7 @@ public class AIDialogueRequest
 
     public string currentDialogueId;
     public string currentNodeId;
+    public string generatedResponseRequestId;
 
     public PlayerStateSnapshot playerState;
 }

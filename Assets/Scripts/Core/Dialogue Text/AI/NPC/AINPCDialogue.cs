@@ -42,6 +42,9 @@ public class AINPCDialogue : MonoBehaviour, IInteractable
         dialogueController.OnFreeTextSubmitted -= HandleFreeTextSubmitted;
         dialogueController.OnFreeTextSubmitted += HandleFreeTextSubmitted;
 
+        dialogueController.OnGeneratedResponseRequested -= HandleGeneratedResponseRequested;
+        dialogueController.OnGeneratedResponseRequested += HandleGeneratedResponseRequested;
+
         dialogueController.OnConversationEnded -= HandleConversationEnded;
         dialogueController.OnConversationEnded += HandleConversationEnded;
 
@@ -51,6 +54,14 @@ public class AINPCDialogue : MonoBehaviour, IInteractable
     private void HandleFreeTextSubmitted(string playerInput, DialogueText dialogueText, DialogueNode node)
     {
         aiDialogueService.SubmitPlayerText(this, playerInput, dialogueText, node);
+    }
+
+    private void HandleGeneratedResponseRequested(
+        DialogueText dialogueText,
+        DialogueNode node,
+        string playerInput)
+    {
+        aiDialogueService.RequestGeneratedResponse(this, dialogueText, node, playerInput);
     }
 
     private void HandleConversationEnded()
@@ -87,6 +98,7 @@ public class AINPCDialogue : MonoBehaviour, IInteractable
         }
 
         dialogueController.OnFreeTextSubmitted -= HandleFreeTextSubmitted;
+        dialogueController.OnGeneratedResponseRequested -= HandleGeneratedResponseRequested;
         dialogueController.OnConversationEnded -= HandleConversationEnded;
     }
 }

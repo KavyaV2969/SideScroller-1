@@ -69,6 +69,78 @@ public class AIDialogueService : MonoBehaviour
         }
     }
 
+    public async void RequestGeneratedResponse(
+        AINPCDialogue npc,
+        DialogueText currentDialogue,
+        DialogueNode currentNode,
+        string playerInput)
+    {
+        if (npc == null)
+        {
+            Debug.LogWarning("AIDialogueService received null NPC for generated response.");
+            return;
+        }
+
+        if (currentNode == null)
+        {
+            Debug.LogWarning("AIDialogueService received null generated-response node.");
+            PlayFallback(npc);
+            return;
+        }
+
+        if (dialogueController == null)
+        {
+            Debug.LogWarning("AIDialogueService has no DialogueController assigned.");
+            return;
+        }
+
+        if (client == null)
+        {
+            Debug.LogWarning("AIDialogueService has no AIDialogueClient assigned.");
+            DisplayGeneratedFallback(npc, currentNode);
+            return;
+        }
+
+        AIDialogueRequest request = new AIDialogueRequest
+        {
+            npcId = npc.NpcId,
+            playerInput = playerInput ?? "",
+            requestedMode = "free_response",
+            currentDialogueId = currentDialogue != null ? currentDialogue.dialogueId : "",
+            currentNodeId = currentNode.nodeId,
+            generatedResponseRequestId = currentNode.generatedResponseRequestId,
+            playerState = gameStateProvider != null
+                ? gameStateProvider.BuildSnapshotForNPC(npc.NpcId)
+                : new PlayerStateSnapshot()
+        };
+
+        try
+        {
+            AIDialogueResponse response = await client.SendDialogueRequest(request);
+
+            if (!IsValidGeneratedResponse(response, npc, currentNode))
+            {
+                DisplayGeneratedFallback(npc, currentNode);
+                return;
+            }
+
+            string text = response.freeChatText.Trim();
+            int maxCharacters = Mathf.Max(0, currentNode.maxGeneratedCharacters);
+
+            if (text.Length > maxCharacters)
+            {
+                text = text.Substring(0, maxCharacters);
+            }
+
+            dialogueController.DisplayGeneratedResponseLine(npc.DisplayName, text);
+        }
+        catch (System.Exception exception)
+        {
+            Debug.LogWarning($"Generated dialogue flow failed: {exception.Message}");
+            DisplayGeneratedFallback(npc, currentNode);
+        }
+    }
+
     private void HandleResponse(AINPCDialogue npc, AIDialogueResponse response)
     {
         if (response.safety != null && response.safety.blocked)
@@ -97,6 +169,46 @@ public class AIDialogueService : MonoBehaviour
         }
     }
 
+    private bool IsValidGeneratedResponse(
+        AIDialogueResponse response,
+        AINPCDialogue npc,
+        DialogueNode node)
+    {
+        if (response == null ||
+            node == null ||
+            node.contentMode != DialogueNodeContentMode.GeneratedResponse)
+        {
+            return false;
+        }
+
+        if (response.safety != null && response.safety.blocked)
+        {
+            return false;
+        }
+
+        if (response.npcId != npc.NpcId)
+        {
+            return false;
+        }
+
+        if (response.responseType != "generated_response")
+        {
+            return false;
+        }
+
+        if (response.proposedActions != null && response.proposedActions.Length > 0)
+        {
+            return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(response.freeChatText))
+        {
+            return false;
+        }
+
+        return true;
+    }
+
     private void PlayFallback(AINPCDialogue npc)
     {
         if (dialogueController == null)
@@ -112,6 +224,18 @@ public class AIDialogueService : MonoBehaviour
         }
 
         dialogueController.DisplayFreeChatLine(npc.DisplayName, "I do not know what to say to that.");
+    }
+
+    private void DisplayGeneratedFallback(AINPCDialogue npc, DialogueNode node)
+    {
+        if (dialogueController == null)
+        {
+            return;
+        }
+
+        dialogueController.DisplayGeneratedResponseLine(
+            npc.DisplayName,
+            node.generatedFallbackText);
     }
 
     private void HandleIntentRouteResponse(AINPCDialogue npc, AIDialogueResponse response)

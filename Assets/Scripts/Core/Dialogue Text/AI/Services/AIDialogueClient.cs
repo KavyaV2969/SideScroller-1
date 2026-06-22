@@ -33,73 +33,74 @@ public class AIDialogueClient : MonoBehaviour
     {
         await Task.Delay(Mathf.RoundToInt(mockDelaySeconds * 1000f));
 
-        string input = request.playerInput.ToLowerInvariant();
+        if (request.requestedMode == "free_response")
+        {
+            return BuildMockGeneratedResponse(request);
+        }
+
+        return BuildMockIntentRouteResponse(request);
+    }
+
+    private AIDialogueResponse BuildMockIntentRouteResponse(AIDialogueRequest request)
+    {
+        string input = (request.playerInput ?? "").ToLowerInvariant();
+
+        if (input.Contains("loot") || input.Contains("drop") || input.Contains("reward table"))
+        {
+            return BuildMockIntentRouteResponse(request, "inquiry_of_weekly_loot");
+        }
 
         if (input.Contains("brother") || input.Contains("tomas"))
         {
-            return new AIDialogueResponse
-            {
-                responseType = "intent_route",
-                npcId = request.npcId,
-                intent = "mention_brother_helped",
-                dialogueId = "",
-                startNodeId = "",
-                freeChatText = "",
-                proposedActions = new AIDialogueAction[0],
-                safety = new AISafetyInfo
-                {
-                    blocked = false,
-                    reason = ""
-                }
-            };
+            return BuildMockIntentRouteResponse(request, "mention_brother_helped");
         }
 
         if (input.Contains("frostwell") || input.Contains("dungeon"))
         {
-            return new AIDialogueResponse
-            {
-                responseType = "intent_route",
-                npcId = request.npcId,
-                intent = "ask_about_dungeon",
-                dialogueId = "",
-                startNodeId = "",
-                freeChatText = "",
-                proposedActions = new AIDialogueAction[0],
-                safety = new AISafetyInfo
-                {
-                    blocked = false,
-                    reason = ""
-                }
-            };
+            return BuildMockIntentRouteResponse(request, "ask_about_dungeon");
         }
 
         if (input.Contains("ignore") || input.Contains("system") || input.Contains("prompt"))
         {
-            return new AIDialogueResponse
-            {
-                responseType = "intent_route",
-                npcId = request.npcId,
-                intent = "prompt_injection",
-                dialogueId = "",
-                startNodeId = "",
-                freeChatText = "",
-                proposedActions = new AIDialogueAction[0],
-                safety = new AISafetyInfo
-                {
-                    blocked = false,
-                    reason = ""
-                }
-            };
+            return BuildMockIntentRouteResponse(request, "prompt_injection");
         }
 
+        return BuildMockIntentRouteResponse(request, "unknown");
+    }
+
+    private AIDialogueResponse BuildMockIntentRouteResponse(AIDialogueRequest request, string intent)
+    {
         return new AIDialogueResponse
         {
             responseType = "intent_route",
             npcId = request.npcId,
-            intent = "unknown",
+            intent = intent,
             dialogueId = "",
             startNodeId = "",
             freeChatText = "",
+            proposedActions = new AIDialogueAction[0],
+            safety = new AISafetyInfo
+            {
+                blocked = false,
+                reason = ""
+            }
+        };
+    }
+
+    private AIDialogueResponse BuildMockGeneratedResponse(AIDialogueRequest request)
+    {
+        string line = request.generatedResponseRequestId == "weekly_loot"
+            ? "This week's notable loot is Moonsteel Ore. The common pool includes frost resin, old linen, and bone charms."
+            : "I do not know much about that.";
+
+        return new AIDialogueResponse
+        {
+            responseType = "generated_response",
+            npcId = request.npcId,
+            intent = "",
+            dialogueId = "",
+            startNodeId = "",
+            freeChatText = line,
             proposedActions = new AIDialogueAction[0],
             safety = new AISafetyInfo
             {
