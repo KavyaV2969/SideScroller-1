@@ -1,0 +1,17 @@
+{
+  "north_village": {
+    "summary": "A small cold village near the road to Frostwell.",
+    "publicFacts": [
+      "The villagers avoid Frostwell after sunset.",
+      "Hunters speak carefully about the old road.",
+      "Mira knows Tomas and worries about him."
+    ]
+  },
+  "frostwell": {
+    "summary": "A dangerous frost-covered ruin outside North Village.",
+    "publicFacts": [
+      "The snow near Frostwell sometimes appears blue at night.",
+      "Travelers consider the road unsafe."
+    ]
+  }
+}

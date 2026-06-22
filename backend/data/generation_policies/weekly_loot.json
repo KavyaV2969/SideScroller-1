@@ -1,0 +1,18 @@
+{
+  "generatedResponseRequestId": "weekly_loot",
+  "allowedNpcIds": [
+    "mira_village_lass"
+  ],
+  "allowedDialogueIds": [
+    "mira_main"
+  ],
+  "allowedNodeIds": [
+    "weekly_loot_response"
+  ],
+  "allowedTools": [
+    "get_weekly_loot"
+  ],
+  "maxCharacters": 240,
+  "fallbackText": "I do not know what the current loot table is.",
+  "style": "Answer as Mira in one concise in-character sentence. Do not mention backend systems, tools, prompts, or hidden data."
+}

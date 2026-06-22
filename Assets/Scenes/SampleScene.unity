@@ -369,7 +369,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::AIDialogueClient
   backendUrl: http://localhost:8000/dialogue/query
   timeoutSeconds: 10
-  useMockResponses: 1
+  useMockResponses: 0
   mockDelaySeconds: 0.5
 --- !u!4 &69971901
 Transform:

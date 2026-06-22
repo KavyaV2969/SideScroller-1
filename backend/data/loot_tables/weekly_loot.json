@@ -1,0 +1,11 @@
+{
+  "weekId": "week_001",
+  "displayName": "Frostwell weekly loot rotation",
+  "notableLoot": "Moonsteel Ore",
+  "commonLoot": [
+    "frost resin",
+    "old linen",
+    "bone charms"
+  ],
+  "source": "Frostwell dungeon weekly rotation"
+}

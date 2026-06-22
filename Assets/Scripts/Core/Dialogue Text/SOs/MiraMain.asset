@@ -19,9 +19,16 @@ MonoBehaviour:
   nodes:
   - nodeId: greeting
     speakerNameOverride: 
+    contentMode: 0
     text: Good day. Are you looking for someone?
+    generatedResponseRequestId: 
+    generatedFallbackText: I do not know enough to answer that.
+    maxGeneratedCharacters: 240
+    generatedResponseEndsConversation: 1
     inputMode: 0
     freeTextPrompt: What do you say?
+    freeTextSubmitMode: 0
+    directFreeTextTargetNodeId: 
     nextNodeId: ask_input
     endsConversationAfterThisLine: 0
     triggerId: 
@@ -30,9 +37,16 @@ MonoBehaviour:
     unknownIntentNodeId: 
   - nodeId: ask_input
     speakerNameOverride: 
+    contentMode: 0
     text: You may ask, though I know little beyond the village.
+    generatedResponseRequestId: 
+    generatedFallbackText: I do not know enough to answer that.
+    maxGeneratedCharacters: 240
+    generatedResponseEndsConversation: 1
     inputMode: 2
     freeTextPrompt: What do you ask Mira?
+    freeTextSubmitMode: 0
+    directFreeTextTargetNodeId: 
     nextNodeId: ask_input
     endsConversationAfterThisLine: 0
     triggerId: 
@@ -54,13 +68,24 @@ MonoBehaviour:
       nextNodeId: unknown_reply
       requiredFlag: 
       blockedByFlag: 
+    - intent: inquiry_of_weekly_loot
+      nextNodeId: weekly_loot_response
+      requiredFlag: 
+      blockedByFlag: 
     unknownIntentNodeId: unknown_reply
   - nodeId: reward_thanks
     speakerNameOverride: 
+    contentMode: 0
     text: You helped Tomas? Then... thank you. I do not have much, but please take
       this.
+    generatedResponseRequestId: 
+    generatedFallbackText: I do not know enough to answer that.
+    maxGeneratedCharacters: 240
+    generatedResponseEndsConversation: 1
     inputMode: 0
     freeTextPrompt: What do you ask Mira?
+    freeTextSubmitMode: 0
+    directFreeTextTargetNodeId: 
     nextNodeId: 
     endsConversationAfterThisLine: 1
     triggerId: mira_reward_claim
@@ -85,9 +110,16 @@ MonoBehaviour:
     unknownIntentNodeId: unknown_reply
   - nodeId: frostwell_reply
     speakerNameOverride: 
+    contentMode: 0
     text: Even the hunters lower their voices when they speak of Frostwell.
+    generatedResponseRequestId: 
+    generatedFallbackText: I do not know enough to answer that.
+    maxGeneratedCharacters: 240
+    generatedResponseEndsConversation: 1
     inputMode: 0
     freeTextPrompt: What do you ask Mira?
+    freeTextSubmitMode: 0
+    directFreeTextTargetNodeId: 
     nextNodeId: 
     endsConversationAfterThisLine: 1
     triggerId: 
@@ -96,9 +128,16 @@ MonoBehaviour:
     unknownIntentNodeId: unknown_reply
   - nodeId: redirect
     speakerNameOverride: 
+    contentMode: 0
     text: I do not understand. Were you asking about the village?
+    generatedResponseRequestId: 
+    generatedFallbackText: I do not know enough to answer that.
+    maxGeneratedCharacters: 240
+    generatedResponseEndsConversation: 1
     inputMode: 0
     freeTextPrompt: What do you ask Mira?
+    freeTextSubmitMode: 0
+    directFreeTextTargetNodeId: 
     nextNodeId: 
     endsConversationAfterThisLine: 1
     triggerId: 
@@ -107,9 +146,34 @@ MonoBehaviour:
     unknownIntentNodeId: unknown_reply
   - nodeId: unknown_reply
     speakerNameOverride: 
+    contentMode: 0
     text: I am not sure what to say to that.
+    generatedResponseRequestId: 
+    generatedFallbackText: I do not know enough to answer that.
+    maxGeneratedCharacters: 240
+    generatedResponseEndsConversation: 1
     inputMode: 0
     freeTextPrompt: What do you ask Mira?
+    freeTextSubmitMode: 0
+    directFreeTextTargetNodeId: 
+    nextNodeId: 
+    endsConversationAfterThisLine: 1
+    triggerId: 
+    choices: []
+    intentRoutes: []
+    unknownIntentNodeId: unknown_reply
+  - nodeId: weekly_loot_response
+    speakerNameOverride: 
+    contentMode: 1
+    text: I am not sure what to say to that.
+    generatedResponseRequestId: weekly_loot
+    generatedFallbackText: I do not know what the current loot table is.
+    maxGeneratedCharacters: 240
+    generatedResponseEndsConversation: 1
+    inputMode: 0
+    freeTextPrompt: What do you ask Mira?
+    freeTextSubmitMode: 0
+    directFreeTextTargetNodeId: 
     nextNodeId: 
     endsConversationAfterThisLine: 1
     triggerId: 
