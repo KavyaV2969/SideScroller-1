@@ -273,7 +273,7 @@ MonoBehaviour:
   interactSprite: {fileID: 1381193449}
   interactDistance: 2
   playerInRange: 0
-  PlayerCheckOrigin: {fileID: 37893535}
+  playerCheckOrigin: {fileID: 0}
   dialogueText: {fileID: 11400000, guid: 540bd51e18438ec498c06cf6e846ebde, type: 2}
   dialogueController: {fileID: 2012264420}
   player: {fileID: 744048892}
@@ -368,7 +368,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AIDialogueClient
   backendUrl: http://localhost:8000/dialogue/query
-  timeoutSeconds: 10
+  timeoutSeconds: 60
   useMockResponses: 0
   mockDelaySeconds: 0.5
 --- !u!4 &69971901
@@ -429,7 +429,7 @@ MonoBehaviour:
   interactSprite: {fileID: 538389903}
   interactDistance: 2
   playerInRange: 0
-  PlayerCheckOrigin: {fileID: 218348227}
+  playerCheckOrigin: {fileID: 0}
   dialogueText: {fileID: 11400000, guid: 540bd51e18438ec498c06cf6e846ebde, type: 2}
   dialogueController: {fileID: 2012264420}
   player: {fileID: 744048892}

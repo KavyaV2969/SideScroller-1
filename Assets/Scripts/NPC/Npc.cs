@@ -1,25 +1,26 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public abstract class NPC : Entity, IInteractable
 {
     [SerializeField] private SpriteRenderer interactSprite;
     [SerializeField] private float interactDistance = 1f;
     [SerializeField] private bool playerInRange;
-    [SerializeField] private Transform PlayerCheckOrigin;
-    private Transform PlayerTransform;
+    [SerializeField] private Transform playerCheckOrigin;
+    private Transform _playerTransform;
 
-    private PlayerInputSystem input;
+    private PlayerInputSystem _input;
 
     protected override void Awake()
     {
         base.Awake();
 
-        input = new PlayerInputSystem();
+        _input = new PlayerInputSystem();
     }
 
     private void OnEnable()
     {
-        input?.Player.Interact.Enable();
+        _input?.Player.Interact.Enable();
     }
 
     protected override void Start()
@@ -30,18 +31,18 @@ public abstract class NPC : Entity, IInteractable
 
         if (playerObject != null)
         {
-            PlayerTransform = playerObject.transform;
+            _playerTransform = playerObject.transform;
         }
     }
 
     private void OnDisable()
     {
-        input?.Player.Interact.Disable();
+        _input?.Player.Interact.Disable();
     }
 
     private void OnDestroy()
     {
-        input?.Dispose();
+        _input?.Dispose();
     }
 
     protected override void Update()
@@ -50,7 +51,7 @@ public abstract class NPC : Entity, IInteractable
 
         IsWithinInteractDistance();
 
-        if (playerInRange && input.Player.Interact.WasPressedThisFrame())
+        if (playerInRange && _input.Player.Interact.WasPressedThisFrame())
         {
             Interact();
         }
@@ -74,12 +75,12 @@ public abstract class NPC : Entity, IInteractable
 
     private void IsWithinInteractDistance()
     {
-        if (PlayerTransform == null)
+        if (_playerTransform == null)
         {
             return;
         }
 
-        if (Vector2.Distance(transform.position, PlayerTransform.position) < interactDistance)
+        if (Vector2.Distance(transform.position, _playerTransform.position) < interactDistance)
         {
             playerInRange = true;
         }
@@ -93,13 +94,13 @@ public abstract class NPC : Entity, IInteractable
     {
         base.OnDrawGizmos();
 
-        if (PlayerCheckOrigin == null)
+        if (playerCheckOrigin == null)
         {
             return;
         }
         
         Gizmos.color = Color.yellow;
-        Gizmos.DrawWireSphere(PlayerCheckOrigin.position, interactDistance);
+        Gizmos.DrawWireSphere(playerCheckOrigin.position, interactDistance);
     }
 
 }
