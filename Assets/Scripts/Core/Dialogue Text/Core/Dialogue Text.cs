@@ -37,6 +37,8 @@ public class DialogueNode
     public string generatedResponseRequestId;
     public string generatedFallbackText = "I do not know enough to answer that.";
     public int maxGeneratedCharacters = 240;
+
+    [Tooltip("Reserved for future use. Generated responses currently always end.")]
     public bool generatedResponseEndsConversation = true;
 
     [Header("Input Mode")]

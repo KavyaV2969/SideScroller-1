@@ -24,6 +24,13 @@ def get_dialogue_node_policy(dialogue_id: str, node_id: str) -> dict[str, Any]:
     """Load a dialogue node's authored policy."""
 
     policy = _load_data_file("dialogue_nodes", dialogue_id)
+
+    if policy.get("dialogueId") != dialogue_id:
+        raise ValueError(
+            "Dialogue policy identity mismatch: "
+            f"expected '{dialogue_id}', got '{policy.get('dialogueId')}'."
+        )
+
     nodes = policy.get("nodes")
 
     if not isinstance(nodes, dict) or node_id not in nodes:
