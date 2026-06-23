@@ -1,5 +1,7 @@
 from typing import Any
 
+from app.config import get_settings
+from app.llm.client import LLMClient
 from app.state import DialogueGraphState
 from app.tools.registry import call_tool
 
@@ -28,6 +30,40 @@ def call_tool_layer(state: DialogueGraphState) -> DialogueGraphState:
 
 
 def generate_free_response(state: DialogueGraphState) -> DialogueGraphState:
+    """Generate with LLM mode when configured, else use deterministic templates."""
+
+    if get_settings().ai_backend_mode == "llm":
+        try:
+            return _generate_free_response_llm(state)
+        except Exception:
+            return _generate_free_response_deterministic(state, llm_fallback=True)
+
+    return _generate_free_response_deterministic(state)
+
+
+def _generate_free_response_llm(state: DialogueGraphState) -> DialogueGraphState:
+    request = state.get("request")
+    output = LLMClient().generate_dialogue_line(
+        npc_profile=_dict_value(state.get("npc_profile")),
+        player_input=request.playerInput if request is not None else "",
+        generation_policy=_dict_value(state.get("generation_policy")),
+        tool_results=_dict_value(state.get("tool_results")),
+    )
+
+    return {
+        "generated_text": output.text,
+        "raw_generation_model_output": {
+            "mode": "openai_structured",
+            "text": output.text,
+        },
+    }
+
+
+def _generate_free_response_deterministic(
+    state: DialogueGraphState,
+    *,
+    llm_fallback: bool = False,
+) -> DialogueGraphState:
     """Build a concise deterministic line from approved tool data."""
 
     policy = state.get("generation_policy", {})
@@ -46,12 +82,16 @@ def generate_free_response(state: DialogueGraphState) -> DialogueGraphState:
         generated_text = _fallback_text(policy)
         used_tools = []
 
+    raw_output: dict[str, Any] = {
+        "mode": "deterministic_template",
+        "usedTools": used_tools,
+    }
+    if llm_fallback:
+        raw_output["fallbackFrom"] = "llm"
+
     return {
         "generated_text": generated_text,
-        "raw_generation_model_output": {
-            "mode": "deterministic_template",
-            "usedTools": used_tools,
-        },
+        "raw_generation_model_output": raw_output,
     }
 
 
@@ -78,6 +118,10 @@ def _build_weekly_loot_line(loot: dict[str, Any], fallback_text: str) -> str:
 def _fallback_text(policy: dict[str, Any]) -> str:
     text = policy.get("fallbackText")
     return text if isinstance(text, str) and text else GENERIC_FALLBACK_TEXT
+
+
+def _dict_value(value: object) -> dict[str, Any]:
+    return value if isinstance(value, dict) else {}
 
 
 def _fallback(state: DialogueGraphState, reason: str) -> DialogueGraphState:
