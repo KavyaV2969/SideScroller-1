@@ -6,7 +6,7 @@ public class Enemy : Entity
     public EnemyIdleState idleState;
     public EnemyMoveState moveState;
     public EnemyAttackState attackState;
-    public KnightBattleState battleState;
+    public EnemyBattleState battleState;
 
     [Header("Battle Details")]
     public float battleMoveSpeed = 3;
@@ -23,8 +23,29 @@ public class Enemy : Entity
     [SerializeField] private LayerMask playerLayer;
     [SerializeField] private Transform playerCheck;
     [SerializeField] private float playerCheckDistance = 10;
+    public Transform player { get; private set; }
 
     protected Vector3 PlayerCheckOrigin => playerCheck != null ? playerCheck.position : transform.position;
+
+    public Transform GetPlayerReference()
+    {
+        if (player == null)
+        {
+            player = PlayerDetection().transform;
+        }
+
+        return player;
+    }
+    public void TryEnteringBattleState(Transform player)
+    {
+        if (stateMachine.currentState == battleState || stateMachine.currentState == attackState)
+        {
+            return;
+        }
+
+        this.player = player;
+        stateMachine.ChangeState(battleState);
+    }
 
     public RaycastHit2D PlayerDetection()
     {

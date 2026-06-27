@@ -14,9 +14,9 @@ public class EnemyBattleState : EnemyState
     {
         base.Enter();
 
-        if (player == null){
-            player = enemy.PlayerDetection().transform;
-        }
+        SetLastTimeInBattle();
+
+        player ??= enemy.GetPlayerReference();
     }
 
     public override void Update()
