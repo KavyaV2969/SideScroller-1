@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.Serialization;
 
-public abstract class NPC : Entity, IInteractable
+public abstract class InteractableEntity : Entity, IInteractable
 {
     [SerializeField] private SpriteRenderer interactSprite;
     [SerializeField] private float interactDistance = 1f;

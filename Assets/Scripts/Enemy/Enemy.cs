@@ -7,6 +7,7 @@ public class Enemy : Entity
     public EnemyMoveState moveState;
     public EnemyAttackState attackState;
     public EnemyBattleState battleState;
+    public EnemyDeadState deadState;
 
     [Header("Battle Details")]
     public float battleMoveSpeed = 3;
@@ -59,6 +60,18 @@ public class Enemy : Entity
         return hit;
     }
 
+    public override void EntityDeath()
+    {
+        base.EntityDeath();
+
+        stateMachine.ChangeState(deadState);
+    }
+
+    public void HandlePlayerDeath()
+    {
+        stateMachine.ChangeState(idleState);
+    }
+
 
     protected override void OnDrawGizmos()
     {
@@ -70,5 +83,15 @@ public class Enemy : Entity
 
         Gizmos.color = Color.blue;
         Gizmos.DrawLine(PlayerCheckOrigin, new Vector3(PlayerCheckOrigin.x + (facingDir * attackDistance), PlayerCheckOrigin.y));
+    }
+
+    private void OnEnable()
+    {
+        Player.OnPlayerDeath += HandlePlayerDeath;
+    }
+
+    private void OnDisable()
+    {
+        Player.OnPlayerDeath -= HandlePlayerDeath;
     }
 }

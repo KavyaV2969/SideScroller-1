@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class Lady : NPC, ITalkable
+public class Lady : InteractableEntity, ITalkable
 {
     [Header("Normal Dialogue")]
     [SerializeField] private DialogueText dialogueText;

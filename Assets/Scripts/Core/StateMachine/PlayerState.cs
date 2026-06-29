@@ -5,6 +5,10 @@ public abstract class PlayerState : EntityState
     protected Player player;
     protected PlayerInputSystem input;
 
+    public PlayerState(StateMachine stateMachine, string animBoolName) : base(stateMachine, animBoolName)
+    {
+    }
+
     public PlayerState(Player player, StateMachine stateMachine, string animBoolName) : base(stateMachine, animBoolName)
     {
         this.player = player;

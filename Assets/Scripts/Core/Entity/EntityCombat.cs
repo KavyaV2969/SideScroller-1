@@ -2,6 +2,8 @@ using UnityEngine;
 
 public class EntityCombat : MonoBehaviour
 {
+    [SerializeField] private float attackDamage = 10f;
+
     [Header("Target Detection")]
     [SerializeField] private Transform targetCheck;
     [SerializeField] private float targetCheckRadius;
@@ -21,9 +23,9 @@ public class EntityCombat : MonoBehaviour
     {
         foreach (var collider in GetDetectedColliders())
         {
-            EntityHealth targetHealth = collider.GetComponent<EntityHealth>();
+            IDamageable damageable = collider.GetComponent<IDamageable>();
 
-            targetHealth?.TakeDamage(10f, transform);
+            damageable?.TakeDamage(attackDamage, transform);
         }
     }
 }

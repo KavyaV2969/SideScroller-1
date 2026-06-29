@@ -1,8 +1,11 @@
 using UnityEngine;
 using System.Collections;
+using System;
 
 public class Player : Entity
 {
+    public static event Action OnPlayerDeath;
+
     public PlayerInputSystem input { get; private set; }
 
     public PlayerIdleState idleState { get; private set; }
@@ -14,6 +17,7 @@ public class Player : Entity
     public PlayerDashState dashState { get; private set; }
     public PlayerAttackState attackState { get; private set; }  
     public PlayerJumpAttackState jumpAttackState { get; private set; }
+    public PlayerDeadState deadState { get; private set; }
 
     public Vector2 moveInput { get; private set; }
     public bool movementEnabled { get; private set; } = true;
@@ -51,6 +55,7 @@ public class Player : Entity
         dashState = new PlayerDashState(this, stateMachine, "dash");
         attackState = new PlayerAttackState(this, stateMachine, "basicAttack");
         jumpAttackState = new PlayerJumpAttackState(this, stateMachine, "jumpAttack");
+        deadState = new PlayerDeadState(this, stateMachine, "dead");
     }
 
     private void OnEnable()
@@ -129,6 +134,14 @@ public class Player : Entity
             inventoryItemIds = inventoryItemIds ?? new string[0],
             inventoryItems = inventoryItems ?? new InventoryItemSnapshot[0]
         };
+    }
+
+    public override void EntityDeath()
+    {
+        base.EntityDeath();
+
+        OnPlayerDeath?.Invoke();
+        stateMachine.ChangeState(deadState);
     }
 
     private void ApplyMovementInputState()

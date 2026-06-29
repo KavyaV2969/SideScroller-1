@@ -14,6 +14,7 @@ public class Enemy_Knight : Enemy
         moveState = new EnemyMoveState(this, stateMachine, "move");
         attackState = new EnemyAttackState(this, stateMachine, "attack");
         battleState = new KnightBattleState(this, stateMachine, "battle");
+        deadState = new EnemyDeadState(this, stateMachine, "idle");
     }
 
     protected override void Start()
