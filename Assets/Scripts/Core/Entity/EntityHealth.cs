@@ -1,9 +1,11 @@
+using Unity.VisualScripting.Antlr3.Runtime.Misc;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class EntityHealth : MonoBehaviour, IDamageable
 {
     [SerializeField] protected float health;
-    [SerializeField] protected float maxHp = 100;
+    [SerializeField] protected float evasion;
     [SerializeField] protected bool isDead;
     [SerializeField] protected bool isInvincible;
     [SerializeField] protected bool isCCImmune;
@@ -12,25 +14,39 @@ public class EntityHealth : MonoBehaviour, IDamageable
 
     private EntityVFX entityVFX;
     private Entity entity;
+    private EntityStats entityStats;
+    private Slider healthBar;
 
     [Header("On Damage Settings")]
     [SerializeField] private Vector2 onDamageKnockback = new Vector2(1.5f, 2.5f);
     [SerializeField] private Vector2 onHeavyDamageKnockback = new Vector2(7f, 7f);
     [SerializeField] private float knockbackDuration = 0.2f;
     [SerializeField] private float heavyKnockbackDuration = 0.2f;
+
     [Header("On Heavy Damage Settings")]
     [SerializeField] private float heavyDamageThreshold = 0.3f;
 
     protected virtual void Awake()
     {
-        health = maxHp;
         entity = GetComponent<Entity>() ?? GetComponentInParent<Entity>();
         entityVFX = GetComponent<EntityVFX>();
+        entityStats = GetComponent<EntityStats>();
+        healthBar = GetComponentInChildren<Slider>();
+
+        health = entityStats.GetMaxHealth();
+        evasion = entityStats.GetEvasionChance();
+        UpdateHealthbar();
     }
 
-    public virtual void TakeDamage(float damage, Transform damageDealer)
+    public virtual bool TakeDamage(float damage, Transform damageDealer)
     {
-        if (isInvincible || isDead) return;
+        if (isInvincible || isDead) { return false; }
+
+        if (AttackEvaded())
+        {
+            Debug.Log($"{gameObject.name} evaded the attack.");
+            return false;
+        }
 
         if (!isKnockbackImmune && damageDealer != null)
         {
@@ -40,11 +56,14 @@ public class EntityHealth : MonoBehaviour, IDamageable
 
         entityVFX?.PlayOnDamageVFX();
         ReduceHp(damage);
+
+        return true;
     }
 
     void ReduceHp(float damage)
     {
         health -= damage;
+        UpdateHealthbar();
 
         if (health <= 0)
         {
@@ -59,6 +78,11 @@ public class EntityHealth : MonoBehaviour, IDamageable
         Debug.Log($"{gameObject.name} has died.");
     }
 
+    private void UpdateHealthbar()
+    {
+        healthBar.value = health / entityStats.GetMaxHealth();
+    }
+
     private Vector2 CalculateKnockback(float damage, Transform damageDealer)
     {
         int direction = damageDealer.position.x > transform.position.x ? -1 : 1;
@@ -70,6 +94,12 @@ public class EntityHealth : MonoBehaviour, IDamageable
 
     private bool isHeavyDamage(float damage)
     {
-        return damage >= maxHp * heavyDamageThreshold;
+        return damage >= entityStats.GetMaxHealth() * heavyDamageThreshold;
+    }
+
+    protected virtual bool AttackEvaded()
+    {
+        float evasionChance = entityStats.GetEvasionChance();
+        return CombatChance.Roll(evasionChance);
     }
 }

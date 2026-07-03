@@ -1,13 +1,30 @@
+using System;
 using UnityEngine;
 
 public class EntityCombat : MonoBehaviour
 {
-    [SerializeField] private float attackDamage = 10f;
+    private EntityVFX entityVFX;
+    private EntityStats entityStats;
 
     [Header("Target Detection")]
     [SerializeField] private Transform targetCheck;
     [SerializeField] private float targetCheckRadius;
     [SerializeField] private LayerMask whatIsTarget;
+
+    [Header("Attack Details")]
+    [SerializeField] private float critRate;
+    [SerializeField] private float critDamage;
+    [SerializeField] private float damage;
+
+    public void Awake()
+    {
+        entityVFX = GetComponent<EntityVFX>();
+        entityStats = GetComponent<EntityStats>();
+
+        critRate = entityStats.GetCritRate();
+        critDamage = entityStats.GetCritDamageMultiplier();
+        damage = entityStats.offense.damage.GetValue() + entityStats.GetDamageBonus();
+    }
 
     public Collider2D[] GetDetectedColliders()
     {
@@ -25,7 +42,15 @@ public class EntityCombat : MonoBehaviour
         {
             IDamageable damageable = collider.GetComponent<IDamageable>();
 
-            damageable?.TakeDamage(attackDamage, transform);
+            if (damageable == null)
+            {
+                continue;
+            }
+
+            bool isCrit;
+
+            damageable.TakeDamage(entityStats.GetDamage(out isCrit), transform);
+            entityVFX.PlayOnHitVFX(collider.transform, isCrit);
         }
     }
 }

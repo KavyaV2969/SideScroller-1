@@ -1,8 +1,10 @@
+using System;
 using System.Collections;
 using UnityEngine;
 
 public class Entity : MonoBehaviour
 {
+    public event Action OnFlipped;
     public Animator anim { get; private set; }
     public Rigidbody2D rb { get; private set; }
     public StateMachine stateMachine { get; private set; }
@@ -80,6 +82,8 @@ public class Entity : MonoBehaviour
         transform.Rotate(0, 180, 0);
         facingRight = !facingRight;
         facingDir *= -1;
+
+        OnFlipped?.Invoke();
     }
 
     public virtual void callAnimationTrigger()
