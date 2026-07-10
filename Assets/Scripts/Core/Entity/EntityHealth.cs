@@ -6,11 +6,18 @@ public class EntityHealth : MonoBehaviour, IDamageable
 {
     [SerializeField] protected float health;
     [SerializeField] protected float evasion;
+    [SerializeField] protected float armor;
+    [SerializeField] protected float armorMitigation;
     [SerializeField] protected bool isDead;
     [SerializeField] protected bool isInvincible;
     [SerializeField] protected bool isCCImmune;
     [SerializeField] protected bool isKnockbackImmune;
     [SerializeField] protected bool isStatusImmune;
+
+    [Header("Magic Resistances")]
+    [SerializeField] protected float fireResistance;
+    [SerializeField] protected float iceResistance;
+    [SerializeField] protected float lightningResistance;
 
     private EntityVFX entityVFX;
     private Entity entity;
@@ -35,10 +42,17 @@ public class EntityHealth : MonoBehaviour, IDamageable
 
         health = entityStats.GetMaxHealth();
         evasion = entityStats.GetEvasionChance();
+        armor = entityStats.GetArmor();
+        armorMitigation = 1f - entityStats.GetArmorMitigation();
+
+        fireResistance = entityStats.GetElementalResistance(ElementType.Fire);
+        iceResistance = entityStats.GetElementalResistance(ElementType.Ice);
+        lightningResistance = entityStats.GetElementalResistance(ElementType.Lightning);
+
         UpdateHealthbar();
     }
 
-    public virtual bool TakeDamage(float damage, Transform damageDealer)
+    public virtual bool TakeDamage(float damage, float elementalDamage, ElementType element, Transform damageDealer)
     {
         if (isInvincible || isDead) { return false; }
 
@@ -48,20 +62,38 @@ public class EntityHealth : MonoBehaviour, IDamageable
             return false;
         }
 
-        if (!isKnockbackImmune && damageDealer != null)
-        {
-            Vector2 knockback = CalculateKnockback(damage, damageDealer);
-            entity?.RecieveKnockback(knockback, isHeavyDamage(damage) ? heavyKnockbackDuration : knockbackDuration);
-        }
+        EntityStats attackerStats = damageDealer.GetComponent<EntityStats>();
+        float armorPen = attackerStats != null ? attackerStats.GetArmorPenetration() : 0f;
+        float elementalResPen = attackerStats != null ? attackerStats.GetElementalResPen(element) : 0f;
 
-        entityVFX?.PlayOnDamageVFX();
-        ReduceHp(damage);
+        float mitigation = entityStats.GetArmorMitigation(armorPen);
+        float mitigatedDamage = damage * (1 - mitigation);
+
+        float magicResistance = entityStats.GetElementalResistance(element);
+        float mitigatedResistance = Mathf.Max(0f, magicResistance - elementalResPen);
+        float mitigatedElementalDamage = elementalDamage * (1 - mitigatedResistance);
+
+        TakeKnockback(damageDealer, mitigatedDamage);
+
+        ReduceHp(mitigatedDamage+mitigatedElementalDamage);
+
+        Debug.Log(gameObject.name + " took " + mitigatedDamage + " damage from " + damageDealer.name);
 
         return true;
     }
 
+    private void TakeKnockback(Transform damageDealer, float mitigatedDamage)
+    {
+        if (!isKnockbackImmune && damageDealer != null)
+        {
+            Vector2 knockback = CalculateKnockback(mitigatedDamage, damageDealer);
+            entity?.RecieveKnockback(knockback, isHeavyDamage(mitigatedDamage) ? heavyKnockbackDuration : knockbackDuration);
+        }
+    }
+
     void ReduceHp(float damage)
     {
+        entityVFX?.PlayOnDamageVFX();
         health -= damage;
         UpdateHealthbar();
 

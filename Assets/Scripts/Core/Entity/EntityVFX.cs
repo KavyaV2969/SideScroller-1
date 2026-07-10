@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections;
+using Unity.VisualScripting;
 
 public class EntityVFX : MonoBehaviour
 {
@@ -10,17 +11,39 @@ public class EntityVFX : MonoBehaviour
     [SerializeField] private Material onDamageMaterial;
     [SerializeField] private float onDamageVFXDuration = 0.2f;
 
+    [Header("On damage VFX settings")]
+    [SerializeField] private Color HitVfxColor = Color.white;
+
     [SerializeField] GameObject onHitVFX;
     [SerializeField] GameObject onCritHitVFX;
 
     private Material originalMaterial;
     private Coroutine onDamageVFXCo;
 
+    [Header("VFX Color Settings")]
+    [SerializeField] private Color chillVfx = Color.cyan;
+    [SerializeField] private Color burnVfx = Color.orange;
+    [SerializeField] private Color shockVfx = Color.yellow;
+    private Color defaultHitVfxColor;
+
     private void Awake()
     {
         sr = GetComponentInChildren<SpriteRenderer>();
         originalMaterial = sr.material;
+        defaultHitVfxColor = HitVfxColor;
         entity = GetComponent<Entity>();
+    }
+
+    public void UpdateHitVfxColor(ElementType element)
+    {
+        if (element == ElementType.Ice)
+            HitVfxColor = chillVfx;
+        else if (element == ElementType.Fire)
+            HitVfxColor = burnVfx;
+        else if (element == ElementType.Lightning)
+            HitVfxColor = shockVfx;
+        else
+            HitVfxColor = defaultHitVfxColor;
     }
 
     public void PlayOnDamageVFX()
@@ -40,6 +63,7 @@ public class EntityVFX : MonoBehaviour
         if (prefab != null)
         {
             GameObject vfx = Instantiate(prefab, target.position, Quaternion.identity);
+            vfx.GetComponentInChildren<SpriteRenderer>().color = HitVfxColor;
 
             if (entity.facingDir == -1)
             {

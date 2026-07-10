@@ -5,12 +5,22 @@ public class PlayerStats : EntityStats
 {
     public PlayerMajorStats playerStats;
 
-    public override float GetMaxHealth()
+    public override float GetHealthBonus()
     {
-        float baseHp = maxHealth.GetValue();
-        float vitalityBonus = playerStats.vitality.GetValue() * 5;
+        float vitality = playerStats.vitality.GetValue();
 
-        return baseHp;
+        float vitalityHealth;
+
+        if (vitality <= 40f)
+        {
+            vitalityHealth = vitality * 5f;
+        }
+        else
+        {
+            vitalityHealth = 200f + (vitality - 40f) * 2.5f;
+        }
+
+        return Mathf.Max(0f, vitalityHealth);
     }
 
     public override float GetEvasionChance()
@@ -46,6 +56,24 @@ public class PlayerStats : EntityStats
         return 60 + (strength - 60) * 0.5f;
     }
 
+    public override float GetDamage(out bool isCrit)
+    {
+        float totalDamage = offense.damage.GetValue() + GetDamageBonus();
+
+        if (!DoesExtraMagicDamage())
+        {
+            isCrit = CombatChance.Roll(GetCritRate());
+        }
+        else
+        {
+            isCrit = false;
+        }
+
+        return isCrit
+            ? totalDamage * GetCritDamageMultiplier()
+            : totalDamage;
+    }
+
     public override float GetCritRate()
     {
         float dexterity = playerStats.dexterity.GetValue();
@@ -68,5 +96,84 @@ public class PlayerStats : EntityStats
             : 0.3f + (strength - 60) * 0.0025f;
 
         return baseCritDamageMultiplier + strengthCritDamageBonus;
+    }
+
+    public override float GetArmorBonus()
+    {
+        float vitality = playerStats.vitality.GetValue();
+
+        float vitalityArmor;
+
+        if (vitality <= 40f)
+        {
+            vitalityArmor = vitality * 0.5f;
+        }
+        else
+        {
+            vitalityArmor = 20f + (vitality - 40f) * 0.25f;
+        }
+
+        return Mathf.Max(0f, vitalityArmor);
+    }
+
+    public bool DoesExtraMagicDamage()
+    {
+        if (playerStats.arcane.GetValue() > playerStats.dexterity.GetValue() && playerStats.arcane.GetValue() > playerStats.strength.GetValue())
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    public override float GetArcaneScaling()
+    {
+        float arcane = playerStats.arcane.GetValue();
+
+        float statScaling = 0.4f + arcane / 80f;
+        statScaling = Mathf.Clamp(statScaling, 0f, 1.4f) + Mathf.Clamp(offense.extraArcaneScaling.GetValue(), 0f, 0.6f);
+
+        return statScaling;
+    }
+
+    public override float GetMagicDamageBonus()
+    {
+        float arcane = playerStats.arcane.GetValue();
+
+        if (arcane <= 60)
+        {
+            return arcane * 0.7f;
+        }
+        else
+        {
+            return 42f + (arcane - 60f) * 0.35f;
+        }
+    }
+
+    public override float GetBasicAttackElementalDamage(out ElementType element)
+    {
+        if (!DoesExtraMagicDamage())
+        {
+            element = ElementType.None;
+            return 0f;
+        }
+
+        return base.GetBasicAttackElementalDamage(out element);
+    }
+
+    public override float GetElementalResistanceBonus()
+    {
+        float arcane = playerStats.arcane.GetValue();
+
+        if (arcane <= 60)
+        {
+            return arcane * 0.0025f;
+        }
+        else
+        {
+            return 0.15f + (arcane - 60f) * 0.00125f;
+        }
     }
 }

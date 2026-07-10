@@ -48,8 +48,11 @@ public class EntityCombat : MonoBehaviour
             }
 
             bool isCrit;
+            ElementType element;
+            float elementalDamage = entityStats.GetBasicAttackElementalDamage(out element);
 
-            damageable.TakeDamage(entityStats.GetDamage(out isCrit), transform);
+            damageable.TakeDamage(entityStats.GetDamage(out isCrit), elementalDamage, element, transform);
+            entityVFX.UpdateHitVfxColor(element);
             entityVFX.PlayOnHitVFX(collider.transform, isCrit);
         }
     }

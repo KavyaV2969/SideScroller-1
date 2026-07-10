@@ -2017,11 +2017,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyHealth
   health: 100
   evasion: 0
+  armor: 0
+  armorMitigation: 0
   isDead: 0
   isInvincible: 0
   isCCImmune: 0
   isKnockbackImmune: 0
   isStatusImmune: 0
+  fireResistance: 0
+  iceResistance: 0
+  lightningResistance: 0
   onDamageKnockback: {x: 1.5, y: 2.5}
   onHeavyDamageKnockback: {x: 7, y: 7}
   knockbackDuration: 0.2
@@ -2041,8 +2046,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EntityVFX
   onDamageMaterial: {fileID: 2100000, guid: ffb431f983c3a3d48a863ec089d903ea, type: 2}
   onDamageVFXDuration: 0.1
+  HitVfxColor: {r: 1, g: 1, b: 1, a: 1}
   onHitVFX: {fileID: 146948486607027839, guid: 68052f23ea325fc42b2aee734ac88694, type: 3}
   onCritHitVFX: {fileID: 5599316172633577176, guid: 95b1b07fe4589714da31d6dd2bff8898, type: 3}
+  chillVfx: {r: 0, g: 1, b: 1, a: 1}
+  burnVfx: {r: 1, g: 0.6470588, b: 0, a: 1}
+  shockVfx: {r: 1, g: 1, b: 0.8784314, a: 1}
 --- !u!114 &572943668
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2056,14 +2065,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EntityStats
   maxHealth:
-    baseValue: 100
+    baseValue: 1000
   offense:
     critRate:
-      baseValue: 0.05
-    critDamage:
-      baseValue: 1.5
-    damage:
       baseValue: 0
+    critDamage:
+      baseValue: 0
+    damage:
+      baseValue: 100
     armorPen:
       baseValue: 0
     iceDamage:
@@ -2080,12 +2089,12 @@ MonoBehaviour:
       baseValue: 0
     magicPen:
       baseValue: 0
+    extraArcaneScaling:
+      baseValue: 0
   defense:
     armor:
       baseValue: 0
     evasion:
-      baseValue: 0.8
-    armorShred:
       baseValue: 0
     iceRes:
       baseValue: 0
@@ -2093,13 +2102,16 @@ MonoBehaviour:
       baseValue: 0
     lightningRes:
       baseValue: 0
+    magicRes:
+      baseValue: 0
+  modifier:
+    armorShred:
+      baseValue: 0
     iceResShred:
       baseValue: 0
     fireResShred:
       baseValue: 0
     lightningResShred:
-      baseValue: 0
-    magicRes:
       baseValue: 0
     magicResShred:
       baseValue: 0
@@ -2694,11 +2706,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EntityHealth
   health: 100
   evasion: 0
+  armor: 0
+  armorMitigation: 0
   isDead: 0
   isInvincible: 0
   isCCImmune: 0
   isKnockbackImmune: 0
   isStatusImmune: 0
+  fireResistance: 0
+  iceResistance: 0
+  lightningResistance: 0
   onDamageKnockback: {x: 1.5, y: 2.5}
   onHeavyDamageKnockback: {x: 1.5, y: 2.5}
   knockbackDuration: 0.5
@@ -2718,8 +2735,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EntityVFX
   onDamageMaterial: {fileID: 2100000, guid: ffb431f983c3a3d48a863ec089d903ea, type: 2}
   onDamageVFXDuration: 0.1
+  HitVfxColor: {r: 1, g: 1, b: 1, a: 1}
   onHitVFX: {fileID: 146948486607027839, guid: 68052f23ea325fc42b2aee734ac88694, type: 3}
   onCritHitVFX: {fileID: 5599316172633577176, guid: 95b1b07fe4589714da31d6dd2bff8898, type: 3}
+  chillVfx: {r: 0, g: 1, b: 1, a: 1}
+  burnVfx: {r: 1, g: 0.6470588, b: 0, a: 1}
+  shockVfx: {r: 1, g: 1, b: 0.8784314, a: 1}
 --- !u!114 &744048900
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2733,10 +2754,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerStats
   maxHealth:
-    baseValue: 100
+    baseValue: 10000
   offense:
     critRate:
-      baseValue: 0.05
+      baseValue: 0.9
     critDamage:
       baseValue: 1.5
     damage:
@@ -2748,7 +2769,7 @@ MonoBehaviour:
     fireDamage:
       baseValue: 0
     lightningDamage:
-      baseValue: 0
+      baseValue: 50
     icePen:
       baseValue: 0
     firePen:
@@ -2757,38 +2778,41 @@ MonoBehaviour:
       baseValue: 0
     magicPen:
       baseValue: 0
+    extraArcaneScaling:
+      baseValue: 0
   defense:
     armor:
-      baseValue: 0
+      baseValue: 100
     evasion:
       baseValue: 0
-    armorShred:
-      baseValue: 0
     iceRes:
-      baseValue: 0
+      baseValue: 0.1
     fireRes:
-      baseValue: 0
+      baseValue: 0.1
     lightningRes:
+      baseValue: 0.1
+    magicRes:
       baseValue: 0
+  modifier:
+    armorShred:
+      baseValue: 0.5
     iceResShred:
       baseValue: 0
     fireResShred:
       baseValue: 0
     lightningResShred:
-      baseValue: 0
-    magicRes:
-      baseValue: 0
+      baseValue: 0.05
     magicResShred:
       baseValue: 0
   playerStats:
     vitality:
-      baseValue: 5
-    dexterity:
-      baseValue: 80
-    arcane:
       baseValue: 0
-    strength:
+    dexterity:
+      baseValue: 0
+    arcane:
       baseValue: 80
+    strength:
+      baseValue: 0
 --- !u!1 &780607450
 GameObject:
   m_ObjectHideFlags: 0

@@ -18,4 +18,15 @@ public class OffenseStats
     public Stat firePen;
     public Stat lightningPen;
     public Stat magicPen;
+    public Stat extraArcaneScaling;
+}
+
+public enum ElementType
+{
+    None,
+    Physical,
+    Fire,
+    Ice,
+    Lightning,
+    True
 }
