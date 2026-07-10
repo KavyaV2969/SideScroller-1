@@ -2068,9 +2068,9 @@ MonoBehaviour:
     baseValue: 1000
   offense:
     critRate:
-      baseValue: 0
+      baseValue: 0.8
     critDamage:
-      baseValue: 0
+      baseValue: 1
     damage:
       baseValue: 100
     armorPen:
@@ -2078,7 +2078,7 @@ MonoBehaviour:
     iceDamage:
       baseValue: 0
     fireDamage:
-      baseValue: 0
+      baseValue: 100
     lightningDamage:
       baseValue: 0
     icePen:
