@@ -1229,7 +1229,7 @@ MonoBehaviour:
   m_linkedTextComponent: {fileID: 0}
   parentLinkedComponent: {fileID: 0}
   m_enableKerning: 0
-  m_ActiveFontFeatures: 6e72656b
+  m_ActiveFontFeatures: 6e72656bu
   m_enableExtraPadding: 0
   checkPaddingRequired: 0
   m_isRichText: 1
@@ -1954,7 +1954,7 @@ MonoBehaviour:
   secondaryWallCheck: {fileID: 0}
   isKnocked: 0
   battleMoveSpeed: 8
-  attackDistance: 3.5
+  attackDistance: 2.92
   battleTimeDuration: 10
   idleTime: 2
   moveSpeed: 5
@@ -2262,7 +2262,7 @@ MonoBehaviour:
   m_Intensity: 1
   m_LightVolumeIntensity: 1
   m_LightVolumeEnabled: 0
-  m_ApplyToSortingLayers: 0000000087246b13c575f4fc1787a3947f2976243360498fc99c28ef61bbd7c7
+  m_ApplyToSortingLayers: 0000000087246b13c575f4fc1787a3947f2976243360498fc99c28ef61bbd7c7i
   m_LightCookieSprite: {fileID: 0}
   m_DeprecatedPointLightCookieSprite: {fileID: 0}
   m_LightOrder: 0
@@ -2277,6 +2277,9 @@ MonoBehaviour:
   m_ShadowSoftnessFalloffIntensity: 0.5
   m_ShadowVolumeIntensityEnabled: 0
   m_ShadowVolumeIntensity: 0.75
+  m_RenderingLayersMask:
+    serializedVersion: 0
+    m_Bits: 1
   m_LocalBounds:
     m_Center: {x: 0, y: -0.00000011920929, z: 0}
     m_Extent: {x: 0.9985302, y: 0.99853027, z: 0}
@@ -2595,6 +2598,14 @@ MonoBehaviour:
   primaryWallCheck: {fileID: 1340898370}
   secondaryWallCheck: {fileID: 31891884}
   isKnocked: 0
+  blockDamageReduction: 0.75
+  riposteDamageMultiplier: 2
+  parryCounterDamageMultiplier: 3
+  parryStartup: 0.05
+  parryActiveDuration: 0.15
+  parryRecoveryDuration: 0.3
+  parryRegionOffset: {x: 0.8, y: 0}
+  parryRegionRadius: 0.85
   attackVelocity:
   - {x: 3, y: 1.5}
   - {x: 1, y: 2.5}
@@ -2721,9 +2732,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 744048891}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fc096b58b3456fd4db207411e6e04d8d, type: 3}
+  m_Script: {fileID: 11500000, guid: aaa8fc218ef573b4485dbde719093ce8, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::EntityHealth
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerHealth
   health: 100
   evasion: 0
   armor: 0
@@ -3437,7 +3448,7 @@ MonoBehaviour:
   m_linkedTextComponent: {fileID: 0}
   parentLinkedComponent: {fileID: 0}
   m_enableKerning: 0
-  m_ActiveFontFeatures: 6e72656b
+  m_ActiveFontFeatures: 6e72656bu
   m_enableExtraPadding: 0
   checkPaddingRequired: 0
   m_isRichText: 1
@@ -3574,7 +3585,7 @@ MonoBehaviour:
   m_linkedTextComponent: {fileID: 0}
   parentLinkedComponent: {fileID: 0}
   m_enableKerning: 0
-  m_ActiveFontFeatures: 6e72656b
+  m_ActiveFontFeatures: 6e72656bu
   m_enableExtraPadding: 0
   checkPaddingRequired: 0
   m_isRichText: 1
@@ -6993,7 +7004,7 @@ MonoBehaviour:
   m_linkedTextComponent: {fileID: 0}
   parentLinkedComponent: {fileID: 0}
   m_enableKerning: 0
-  m_ActiveFontFeatures: 6e72656b
+  m_ActiveFontFeatures: 6e72656bu
   m_enableExtraPadding: 1
   checkPaddingRequired: 0
   m_isRichText: 1
@@ -17971,6 +17982,8 @@ MonoBehaviour:
   m_FlexibleWidth: -1
   m_FlexibleHeight: -1
   m_LayoutPriority: 1
+  m_MaxWidth: -1
+  m_MaxHeight: -1
 --- !u!114 &1978936522
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -18041,7 +18054,7 @@ MonoBehaviour:
   m_linkedTextComponent: {fileID: 0}
   parentLinkedComponent: {fileID: 0}
   m_enableKerning: 0
-  m_ActiveFontFeatures: 6e72656b
+  m_ActiveFontFeatures: 6e72656bu
   m_enableExtraPadding: 1
   checkPaddingRequired: 0
   m_isRichText: 1

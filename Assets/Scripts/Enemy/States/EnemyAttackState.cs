@@ -9,6 +9,7 @@ public class EnemyAttackState : EnemyState
     public override void Enter()
     {
         base.Enter();
+        enemy.GetComponent<EntityCombat>().BeginAttack();
         enemy.SetVelocity(0, rb.linearVelocity.y);
     }
 
@@ -22,5 +23,10 @@ public class EnemyAttackState : EnemyState
         {
             stateMachine.ChangeState(enemy.battleState);
         }
+    }
+    public override void Exit()
+    {
+        base.Exit();
+        enemy.GetComponent<EntityCombat>().EndAttack();
     }
 }

@@ -10,6 +10,9 @@ using MCPForUnity.Runtime.Helpers;
 using Microsoft.CSharp;
 using Newtonsoft.Json.Linq;
 using UnityEngine;
+#if UNITY_6000_5_OR_NEWER
+using UnityEngine.Assemblies;
+#endif
 
 namespace MCPForUnity.Editor.Tools
 {
@@ -389,7 +392,11 @@ namespace MCPForUnity.Editor.Tools
                 try
                 {
                     if (assembly.IsDynamic) continue;
+#if UNITY_6000_5_OR_NEWER
+                    var location = assembly.GetLoadedAssemblyPath();
+#else
                     var location = assembly.Location;
+#endif
                     if (string.IsNullOrEmpty(location)) continue;
                     if (!File.Exists(location)) continue;
                     paths.Add(location);
@@ -690,7 +697,11 @@ namespace MCPForUnity.Editor.Tools
                     }
 
                     ms.Seek(0, SeekOrigin.Begin);
+#if UNITY_6000_5_OR_NEWER
+                    return CurrentAssemblies.LoadFromBytes(ms.ToArray(), null);
+#else
                     return Assembly.Load(ms.ToArray());
+#endif
                 }
             }
             catch (Exception e)

@@ -2,7 +2,7 @@ using UnityEngine;
 using System.Collections;
 using System;
 
-public class Player : Entity
+public partial class Player : Entity
 {
     public static event Action OnPlayerDeath;
 
@@ -56,11 +56,13 @@ public class Player : Entity
         attackState = new PlayerAttackState(this, stateMachine, "basicAttack");
         jumpAttackState = new PlayerJumpAttackState(this, stateMachine, "jumpAttack");
         deadState = new PlayerDeadState(this, stateMachine, "dead");
+        InitializeGuardStates();
     }
 
     private void OnEnable()
     {
         input.Enable();
+        if (IsGuardAction) stateMachine.ChangeState(idleState);
 
         // Keep the latest movement input available to every player state.
         input.Player.Movement.performed += OnMovementPerformed;
@@ -71,6 +73,10 @@ public class Player : Entity
 
     private void OnDisable()
     {
+        ResetGuard();
+        if (IsGuardAction) stateMachine.ChangeState(idleState);
+        CancelQueuedAttack();
+        GetComponent<EntityCombat>().EndAttack();
         input.Player.Movement.performed -= OnMovementPerformed;
         input.Player.Movement.canceled -= OnMovementCanceled;
         input.Disable();
@@ -85,7 +91,9 @@ public class Player : Entity
     private IEnumerator EnterAttackStateWithDelayedCo()
     {
         yield return new WaitForEndOfFrame();
-        stateMachine.ChangeState(attackState);
+        queuedAttackCo = null;
+        if (movementEnabled && stateMachine.currentState == attackState)
+            stateMachine.ChangeState(attackState);
     }
 
     public void EnterAttackStatewithDelay()
@@ -104,6 +112,8 @@ public class Player : Entity
 
         if (!movementEnabled)
         {
+            ResetGuard();
+            CancelQueuedAttack();
             moveInput = Vector2.zero;
             SetVelocity(0, rb.linearVelocity.y);
             stateMachine.ChangeState(idleState);
@@ -139,6 +149,8 @@ public class Player : Entity
     public override void EntityDeath()
     {
         base.EntityDeath();
+        ResetGuard();
+        CancelQueuedAttack();
 
         OnPlayerDeath?.Invoke();
         stateMachine.ChangeState(deadState);
@@ -157,6 +169,7 @@ public class Player : Entity
             input.Player.Jump.Enable();
             input.Player.Dash.Enable();
             input.Player.Attack.Enable();
+            input.Player.Block.Enable();
         }
         else
         {
@@ -164,6 +177,7 @@ public class Player : Entity
             input.Player.Jump.Disable();
             input.Player.Dash.Disable();
             input.Player.Attack.Disable();
+            input.Player.Block.Disable();
         }
     }
 
@@ -180,5 +194,11 @@ public class Player : Entity
     private void OnMovementCanceled(UnityEngine.InputSystem.InputAction.CallbackContext ctx)
     {
         moveInput = Vector2.zero;
+    }
+
+    private void CancelQueuedAttack()
+    {
+        if (queuedAttackCo != null) StopCoroutine(queuedAttackCo);
+        queuedAttackCo = null;
     }
 }

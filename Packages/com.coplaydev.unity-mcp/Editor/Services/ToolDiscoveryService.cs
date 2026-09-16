@@ -5,6 +5,7 @@ using System.Reflection;
 using MCPForUnity.Editor.Constants;
 using MCPForUnity.Editor.Helpers;
 using MCPForUnity.Editor.Tools;
+using MCPForUnity.Runtime.Helpers;
 using UnityEditor;
 
 namespace MCPForUnity.Editor.Services
@@ -27,7 +28,7 @@ namespace MCPForUnity.Editor.Services
             var toolTypes = TypeCache.GetTypesWithAttribute<McpForUnityToolAttribute>();
 
             // Fallback scan via AppDomain (slower but exhaustive; mirrors CommandRegistry behaviour)
-            var appDomainTypes = AppDomain.CurrentDomain.GetAssemblies()
+            var appDomainTypes = UnityAssembliesCompat.GetLoadedAssemblies()
                 .Where(a => !a.IsDynamic)
                 .SelectMany(a =>
                 {

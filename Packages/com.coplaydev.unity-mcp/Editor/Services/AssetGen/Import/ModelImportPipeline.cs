@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using MCPForUnity.Editor.Helpers;
 using MCPForUnity.Editor.Security;
+using MCPForUnity.Runtime.Helpers;
 using UnityEditor;
 using UnityEngine;
 
@@ -209,7 +210,7 @@ namespace MCPForUnity.Editor.Services.AssetGen.Import
             bool found = Type.GetType("GLTFast.GltfImport, glTFast") != null;
             if (!found)
             {
-                foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
+                foreach (var asm in UnityAssembliesCompat.GetLoadedAssemblies())
                 {
                     try { if (asm.GetType("GLTFast.GltfImport") != null) { found = true; break; } }
                     catch { /* dynamic/!resolvable assembly */ }

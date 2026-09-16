@@ -5,9 +5,11 @@ public class EnemyBattleState : EnemyState
 {
     protected Transform player;
     private float lastTimeWasInBattle;
+    private readonly EntityCombat entityCombat;
 
     public EnemyBattleState(Enemy enemy, StateMachine stateMachine, string animBoolName) : base(enemy, stateMachine, animBoolName)
     {
+        entityCombat = enemy.GetComponent<EntityCombat>();
     }
 
     public override void Enter()
@@ -56,7 +58,15 @@ public class EnemyBattleState : EnemyState
 
     }
 
-    private bool WithinAttackRange() => DistanceToPlayer() < enemy.attackDistance;
+    private bool WithinAttackRange()
+    {
+        // Use the damage circle itself as the engagement test. This keeps attack timing
+        // correct when the hitbox is repositioned or resized in the Inspector.
+        Collider2D playerCollider = player != null ? player.GetComponent<Collider2D>() : null;
+        return entityCombat != null && playerCollider != null
+            ? entityCombat.IsTargetInRange(playerCollider)
+            : DistanceToPlayer() < enemy.attackDistance;
+    }
 
     private bool BattleOver() => Time.time > lastTimeWasInBattle + enemy.battleTimeDuration;
 

@@ -1,0 +1,52 @@
+PASS fixture is grounded
+PASS Right Click enters held Block: state=PlayerBlockState held=True device=True
+PASS Block holds sprite 22
+PASS blocked enemy hit reduces HP and stores one riposte
+PASS blocked hit does not launch player out of grounded guard
+PASS one swing cannot damage twice across duplicate colliders/events/frames
+PASS Attack consumes stored riposte while Block held
+PASS riposte selects configured multiplier
+PASS riposte animation event deals damage
+PASS counter completes and resets to empty Block
+PASS new enemy swing can grant next riposte
+PASS releasing Right Click clears riposte and block immediately
+PASS 75% mitigation applies to physical plus elemental damage
+Incoming normal=139.1641 blocked=34.78906
+PASS normal attack input and animation event work after riposte
+PASS special multiplier does not leak into normal attack
+PASS Block + Attack without riposte enters Parry
+PASS parry startup is not active
+PASS parry has a timed active window
+PASS region overlap automatically starts parry counter
+PASS successful parry causes exactly zero incoming damage
+PASS parry counter selects higher multiplier
+PASS parried attack cannot damage later after active window ends
+PASS one successful parry produces exactly one 3x animation-driven counter
+PASS successful parry leaves no stored riposte
+Outgoing normal=138.6016 riposte=277.2031 parry=415.7969
+PASS real enemy Animator attack event is parried before damage
+PASS real enemy event automatically produces exactly one counter
+PASS missed parry ends active window and block protection
+PASS missed parry recovery takes full damage without riposte
+PASS movement/jump/dash/Attack cannot cancel vulnerable recovery
+PASS holding Right Click returns to Block after recovery
+PASS active timing without region overlap does not parry
+PASS riposte available before disable reset
+PASS movement/dialogue disable clears guard and disables Block action
+PASS component disable immediately resets special attack state
+PASS re-enable does not resume cancelled counter
+PASS existing ground movement works
+PASS existing jump works: state=PlayerJumpState grounded=False velocity=(0.00, 7.77)
+PASS holding Block in air cannot guard
+PASS existing aerial dash works
+PASS dash exits and restores gravity
+PASS existing jump attack input works
+PASS jump attack landing/completion events return to locomotion
+PASS normal combo advances to second attack
+PASS normal combo advances to third attack
+PASS normal combo completes
+PASS special multiplier armed before death interruption
+PASS death clears guard and disables inputs
+PASS death preserves existing physics shutdown and resets special damage
+All gameplay assertions passed.
+COMPLETE: live Play Mode verification passed, virtual devices and input settings restored.

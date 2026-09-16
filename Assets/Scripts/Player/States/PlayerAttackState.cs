@@ -19,6 +19,7 @@ public class PlayerAttackState : PlayerState
     public override void Enter()
     {
         base.Enter();
+        player.GetComponent<EntityCombat>().BeginAttack();
         comboAttackQueued = false;
         ResetComboIndex();
 
@@ -33,6 +34,7 @@ public class PlayerAttackState : PlayerState
     public override void Update()
     {
         base.Update();
+        if (stateMachine.currentState != this) return;
 
         HandleAttackVelocity();
 
@@ -61,6 +63,7 @@ public class PlayerAttackState : PlayerState
     public override void Exit()
     {
         base.Exit();
+        player.GetComponent<EntityCombat>().EndAttack();
 
         comboIndex++;
     }

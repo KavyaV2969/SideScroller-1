@@ -3,11 +3,11 @@ using UnityEngine;
 
 public class Enemy : Entity
 {
-    public EnemyIdleState idleState;
-    public EnemyMoveState moveState;
-    public EnemyAttackState attackState;
-    public EnemyBattleState battleState;
-    public EnemyDeadState deadState;
+    [System.NonSerialized] public EnemyIdleState idleState;
+    [System.NonSerialized] public EnemyMoveState moveState;
+    [System.NonSerialized] public EnemyAttackState attackState;
+    [System.NonSerialized] public EnemyBattleState battleState;
+    [System.NonSerialized] public EnemyDeadState deadState;
 
     [Header("Battle Details")]
     public float battleMoveSpeed = 3;

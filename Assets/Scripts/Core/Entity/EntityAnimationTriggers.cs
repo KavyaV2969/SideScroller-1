@@ -22,8 +22,9 @@ public class EntityAnimationTriggers : MonoBehaviour
         entity.callAnimationTrigger();
     }
 
-    private void attackTrigger()
+    private void attackTrigger(AnimationEvent animationEvent)
     {
-        entityCombat.PerformAttack();
+        if (entity is Player player) player.OnAttackAnimationEvent(animationEvent);
+        else entityCombat.PerformAttack();
     }
 }

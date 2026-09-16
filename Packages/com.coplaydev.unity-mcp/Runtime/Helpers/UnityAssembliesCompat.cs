@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Reflection;
 
 namespace MCPForUnity.Runtime.Helpers
@@ -9,9 +10,9 @@ namespace MCPForUnity.Runtime.Helpers
     /// Version-compatible wrapper for enumerating loaded assemblies.
     ///
     /// API timeline:
-    ///   Pre-6.8           : AppDomain.CurrentDomain.GetAssemblies()
-    ///   6.8 (CoreCLR)     : UnityEngine.Assemblies.CurrentAssemblies.GetLoadedAssemblies()
-    ///                       (Unity 6.8 replaces Mono with CoreCLR and warns on
+    ///   Pre-6.6           : AppDomain.CurrentDomain.GetAssemblies()
+    ///   6.6+              : UnityEngine.Assemblies.CurrentAssemblies.GetLoadedAssemblies()
+    ///                       (Unity's serialization analyzer warns on
     ///                        AppDomain.GetAssemblies — see the official Path to
     ///                        CoreCLR 2026 upgrade guide.)
     ///
@@ -43,6 +44,9 @@ namespace MCPForUnity.Runtime.Helpers
         /// </summary>
         public static Assembly[] GetLoadedAssemblies()
         {
+#if UNITY_6000_6_OR_NEWER
+            return UnityEngine.Assemblies.CurrentAssemblies.GetLoadedAssemblies().ToArray();
+#else
             if (!_probed)
             {
                 _probed = true;
@@ -62,8 +66,10 @@ namespace MCPForUnity.Runtime.Helpers
             }
 
             return AppDomain.CurrentDomain.GetAssemblies();
+#endif
         }
 
+#if !UNITY_6000_6_OR_NEWER
         private static Func<Assembly[]> ResolveCurrentAssembliesDelegate()
         {
             // 1. Try direct AQN lookups first — cheap, side-effect-free, and
@@ -117,5 +123,6 @@ namespace MCPForUnity.Runtime.Helpers
                 return () => (Assembly[])method.Invoke(null, null);
             }
         }
+#endif
     }
 }

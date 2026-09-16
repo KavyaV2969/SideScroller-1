@@ -14,6 +14,7 @@ public class PlayerIdleState : GroundedState
     public override void Update()
     {
         base.Update();
+        if (stateMachine.currentState != this) return;
 
         if (player.moveInput.x == player.facingDir && player.wallDetected)
         {
