@@ -1,4 +1,4 @@
-from app.state import DialogueGraphState
+from app.state import DialogueGraphState, fallback
 from app.tools.game_data_tools import (
     get_dialogue_node_policy,
     get_generation_policy,
@@ -11,12 +11,12 @@ def load_npc_context(state: DialogueGraphState) -> DialogueGraphState:
 
     request = state.get("request")
     if request is None:
-        return _fallback(state, "Missing request while loading NPC context.")
+        return fallback(state, "Missing request while loading NPC context.")
 
     try:
         return {"npc_profile": get_npc_profile(request.npcId)}
     except (FileNotFoundError, KeyError, OSError, ValueError) as error:
-        return _fallback(state, f"Unable to load NPC context: {error}")
+        return fallback(state, f"Unable to load NPC context: {error}")
 
 
 def load_intent_policy(state: DialogueGraphState) -> DialogueGraphState:
@@ -24,7 +24,7 @@ def load_intent_policy(state: DialogueGraphState) -> DialogueGraphState:
 
     request = state.get("request")
     if request is None:
-        return _fallback(state, "Missing request while loading intent policy.")
+        return fallback(state, "Missing request while loading intent policy.")
 
     try:
         node_policy = get_dialogue_node_policy(
@@ -32,11 +32,11 @@ def load_intent_policy(state: DialogueGraphState) -> DialogueGraphState:
             request.currentNodeId,
         )
     except (FileNotFoundError, KeyError, OSError, ValueError) as error:
-        return _fallback(state, f"Unable to load intent policy: {error}")
+        return fallback(state, f"Unable to load intent policy: {error}")
 
     allowed_intents = _string_list(node_policy.get("allowedIntents"))
     if not allowed_intents:
-        return _fallback(state, "Intent policy has no allowed intents.")
+        return fallback(state, "Intent policy has no allowed intents.")
 
     default_intent = node_policy.get("defaultIntent", "unknown")
     if not isinstance(default_intent, str):
@@ -55,37 +55,29 @@ def load_generation_policy(state: DialogueGraphState) -> DialogueGraphState:
 
     request = state.get("request")
     if request is None:
-        return _fallback(state, "Missing request while loading generation policy.")
+        return fallback(state, "Missing request while loading generation policy.")
 
     try:
         policy = get_generation_policy(request.generatedResponseRequestId)
     except (FileNotFoundError, KeyError, OSError, ValueError) as error:
-        return _fallback(state, f"Unable to load generation policy: {error}")
+        return fallback(state, f"Unable to load generation policy: {error}")
 
     if request.npcId not in _string_list(policy.get("allowedNpcIds")):
-        return _fallback(state, "NPC is not allowed by the generation policy.")
+        return fallback(state, "NPC is not allowed by the generation policy.")
 
     if request.currentDialogueId not in _string_list(policy.get("allowedDialogueIds")):
-        return _fallback(state, "Dialogue is not allowed by the generation policy.")
+        return fallback(state, "Dialogue is not allowed by the generation policy.")
 
     if request.currentNodeId not in _string_list(policy.get("allowedNodeIds")):
-        return _fallback(state, "Node is not allowed by the generation policy.")
+        return fallback(state, "Node is not allowed by the generation policy.")
 
     allowed_tools = _string_list(policy.get("allowedTools"))
     if not allowed_tools:
-        return _fallback(state, "Generation policy has no allowed tools.")
+        return fallback(state, "Generation policy has no allowed tools.")
 
     return {
         "generation_policy": policy,
         "allowed_tools": allowed_tools,
-    }
-
-
-def _fallback(state: DialogueGraphState, reason: str) -> DialogueGraphState:
-    return {
-        "graph_route": "fallback",
-        "fallback_reason": reason,
-        "errors": [*state.get("errors", []), reason],
     }
 
 

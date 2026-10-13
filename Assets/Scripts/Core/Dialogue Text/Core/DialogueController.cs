@@ -9,17 +9,13 @@ public class DialogueController : MonoBehaviour
     [Header("Dialogue UI")]
     [SerializeField] private TextMeshProUGUI NPCNameText;
     [SerializeField] private TextMeshProUGUI NPCDialogueText;
-
     [Header("Options UI")]
     [SerializeField] private Transform optionsContainer;
     [SerializeField] private Button optionButtonPrefab;
-
     [Header("Player")]
     [SerializeField] private Player player;
-
     [Header("Triggers")]
     public UnityEvent<string> onDialogueTrigger;
-
     [Header("Free Text Input")]
     [SerializeField] private GameObject freeTextInputPanel;
     [SerializeField] private TMP_InputField playerInputField;
@@ -29,144 +25,29 @@ public class DialogueController : MonoBehaviour
     public event System.Action<DialogueText, DialogueNode, string> OnGeneratedResponseRequested;
     public event System.Action OnConversationEnded;
 
+    private enum DialogueState { Closed, Continue, Choices, FreeText, Pending }
+    private DialogueState state;
     private DialogueText activeDialogue;
     private readonly Dictionary<string, int> nodeLookup = new Dictionary<string, int>();
-
     private int currentNodeIndex = -1;
-    private bool conversationActive;
-    public bool IsConversationActive => conversationActive;
-    private bool waitingForChoice;
-    private bool waitingForFreeTextInput;
-    private bool waitingForAIResponse;
-    private string lastSubmittedFreeText;
+    private string lastSubmittedFreeText = "";
 
+    public bool IsConversationActive => state != DialogueState.Closed;
     public DialogueText ActiveDialogue => activeDialogue;
-
-    public DialogueNode CurrentNode
-    {
-        get
-        {
-            if (activeDialogue == null ||
-                currentNodeIndex < 0 ||
-                currentNodeIndex >= activeDialogue.nodes.Count)
-            {
-                return null;
-            }
-
-            return activeDialogue.nodes[currentNodeIndex];
-        }
-    }
+    // Changes on every display/close, including revisiting the same authored node.
+    public int Revision { get; private set; }
+    public DialogueNode CurrentNode => activeDialogue != null && currentNodeIndex >= 0 &&
+        currentNodeIndex < activeDialogue.nodes.Count ? activeDialogue.nodes[currentNodeIndex] : null;
 
     private void Awake()
     {
-        if (submitTextButton != null)
-        {
-            submitTextButton.onClick.AddListener(SubmitFreeTextInput);
-        }
-
-        HideFreeTextInput();
-    }
-
-    public void ShowFreeTextInput(string speakerName, string promptText)
-    {
-        ClearOptions();
-
-        conversationActive = true;
-        waitingForChoice = false;
-        waitingForAIResponse = false;
-        waitingForFreeTextInput = true;
-
-        gameObject.SetActive(true);
-
-        NPCNameText.text = speakerName;
-        NPCDialogueText.text = promptText;
-
-        freeTextInputPanel?.SetActive(true);
-
-        if (playerInputField != null)
-        {
-            playerInputField.text = "";
-            playerInputField.ActivateInputField();
-        }
-
-        SetPlayerMovement(false);
-    }
-
-    public void ShowFreeTextInput()
-    {
-        ShowFreeTextInput("", "What do you say?");
-    }
-
-    public void HideFreeTextInput()
-    {
+        submitTextButton?.onClick.AddListener(SubmitFreeTextInput);
         freeTextInputPanel?.SetActive(false);
-        waitingForFreeTextInput = false;
     }
 
-    private void SubmitFreeTextInput()
-    {
-        if (playerInputField == null)
-        {
-            return;
-        }
+    private void OnDestroy() => submitTextButton?.onClick.RemoveListener(SubmitFreeTextInput);
 
-        string input = playerInputField.text.Trim();
-
-        if (string.IsNullOrWhiteSpace(input))
-        {
-            return;
-        }
-
-        DialogueText submittedDialogue = activeDialogue;
-        DialogueNode submittedNode = CurrentNode;
-
-        lastSubmittedFreeText = input;
-
-        HideFreeTextInput();
-
-        waitingForChoice = false;
-        waitingForFreeTextInput = false;
-        waitingForAIResponse = true;
-
-        NPCDialogueText.text = "...";
-
-        if (submittedNode != null &&
-            submittedNode.freeTextSubmitMode == FreeTextSubmitMode.DirectNode)
-        {
-            if (string.IsNullOrWhiteSpace(submittedNode.directFreeTextTargetNodeId))
-            {
-                Debug.LogWarning("FreeText DirectNode mode has no target node id.");
-                EndConversation();
-                return;
-            }
-
-            JumpToNode(submittedNode.directFreeTextTargetNodeId);
-            return;
-        }
-
-        OnFreeTextSubmitted?.Invoke(input, submittedDialogue, submittedNode);
-    }
-
-    public void DisplayNextDialogueText(DialogueText dialogueText)
-    {
-        if (!conversationActive)
-        {
-            StartConversation(dialogueText);
-            return;
-        }
-
-        if (waitingForChoice || waitingForFreeTextInput || waitingForAIResponse)
-        {
-            return;
-        }
-
-        AdvanceFromCurrentNode();
-    }
-
-    public void StartDialogue(DialogueText dialogueText)
-    {
-        StartDialogue(dialogueText, null);
-    }
+    public void StartDialogue(DialogueText dialogueText) => StartDialogue(dialogueText, null);
 
     public void StartDialogue(DialogueText dialogueText, string overrideStartNodeId)
     {
@@ -177,504 +58,242 @@ public class DialogueController : MonoBehaviour
             return;
         }
 
-        HideFreeTextInput();
         activeDialogue = dialogueText;
-        conversationActive = true;
-        waitingForChoice = false;
-        waitingForFreeTextInput = false;
-        waitingForAIResponse = false;
         currentNodeIndex = -1;
         lastSubmittedFreeText = "";
-
-        BuildNodeLookup();
-        SetPlayerMovement(false);
-        gameObject.SetActive(true);
-        ShowNode(GetNodeIndexOrFallback(overrideStartNodeId));
-    }
-
-    private int GetNodeIndexOrFallback(string nodeId)
-    {
-        if (!string.IsNullOrWhiteSpace(nodeId) &&
-            nodeLookup.TryGetValue(nodeId, out int index))
-        {
-            return index;
-        }
-
-        return GetStartNodeIndex();
-    }
-
-    private void StartConversation(DialogueText dialogueText)
-    {
-        StartDialogue(dialogueText);
-    }
-
-    private void BuildNodeLookup()
-    {
         nodeLookup.Clear();
-
-        for (int i = 0; i < activeDialogue.nodes.Count; i++)
+        for (int i = 0; i < dialogueText.nodes.Count; i++)
         {
-            string id = activeDialogue.nodes[i].nodeId;
-
-            if (string.IsNullOrWhiteSpace(id))
-            {
-                continue;
-            }
-
-            if (nodeLookup.ContainsKey(id))
-            {
-                Debug.LogWarning($"Duplicate dialogue node id found: {id}");
-                continue;
-            }
-
-            nodeLookup.Add(id, i);
-        }
-    }
-
-    private int GetStartNodeIndex()
-    {
-        if (!string.IsNullOrWhiteSpace(activeDialogue.startNodeId))
-        {
-            if (nodeLookup.TryGetValue(activeDialogue.startNodeId, out int index))
-            {
-                return index;
-            }
-
-            Debug.LogWarning($"Start node id not found: {activeDialogue.startNodeId}. Falling back to first node.");
+            string id = dialogueText.nodes[i]?.nodeId;
+            if (string.IsNullOrWhiteSpace(id)) continue;
+            if (!nodeLookup.TryAdd(id, i)) Debug.LogWarning($"Duplicate dialogue node id found: {id}");
         }
 
-        return 0;
+        int start = 0;
+        if (!string.IsNullOrWhiteSpace(overrideStartNodeId) &&
+            nodeLookup.TryGetValue(overrideStartNodeId, out int overrideIndex)) start = overrideIndex;
+        else if (!string.IsNullOrWhiteSpace(dialogueText.startNodeId) &&
+            !nodeLookup.TryGetValue(dialogueText.startNodeId, out start))
+            Debug.LogWarning($"Start node id not found: {dialogueText.startNodeId}. Falling back to first node.");
+        ShowNode(start);
     }
 
-    private void ShowNode(int nodeIndex)
+    public void DisplayNextDialogueText(DialogueText dialogueText)
     {
-        if (activeDialogue == null || nodeIndex < 0 || nodeIndex >= activeDialogue.nodes.Count)
+        if (!IsConversationActive) StartDialogue(dialogueText);
+        else if (state == DialogueState.Continue) AdvanceFromCurrentNode();
+    }
+
+    private void ShowNode(int index)
+    {
+        if (activeDialogue == null || index < 0 || index >= activeDialogue.nodes.Count ||
+            activeDialogue.nodes[index] == null)
         {
             EndConversation();
             return;
         }
 
-        ClearOptions();
-        HideFreeTextInput();
-
-        waitingForChoice = false;
-        waitingForFreeTextInput = false;
-        waitingForAIResponse = false;
-
-        currentNodeIndex = nodeIndex;
-        DialogueNode node = activeDialogue.nodes[currentNodeIndex];
+        currentNodeIndex = index;
+        DialogueNode node = CurrentNode;
+        string speaker = string.IsNullOrWhiteSpace(node.speakerNameOverride)
+            ? activeDialogue.speakerName : node.speakerNameOverride;
 
         if (node.contentMode == DialogueNodeContentMode.GeneratedResponse)
         {
-            ShowGeneratedResponseNode(node);
+            Present(DialogueState.Pending, speaker, "...");
+            OnGeneratedResponseRequested?.Invoke(activeDialogue, node, lastSubmittedFreeText);
             return;
         }
 
-        string speakerName = string.IsNullOrWhiteSpace(node.speakerNameOverride)
-            ? activeDialogue.speakerName
-            : node.speakerNameOverride;
-
-        NPCNameText.text = speakerName;
-        NPCDialogueText.text = node.text;
-
+        Present(DialogueState.Continue, speaker, node.text);
+        int revision = Revision;
         FireTrigger(node.triggerId);
+        // A trigger is allowed to close or replace the dialogue.
+        if (Revision != revision) return;
 
-        switch (node.inputMode)
+        if (node.inputMode == DialogueNodeInputMode.FreeText)
         {
-            case DialogueNodeInputMode.Choices:
-                if (node.choices != null && node.choices.Count > 0)
-                {
-                    ShowChoices(node);
-                }
-                break;
-
-            case DialogueNodeInputMode.FreeText:
-                ShowNodeFreeTextInput(speakerName, node.freeTextPrompt);
-                break;
-
-            case DialogueNodeInputMode.Continue:
-            default:
-                break;
+            OpenTextInput(string.IsNullOrWhiteSpace(node.freeTextPrompt) ? node.text : node.freeTextPrompt);
+        }
+        else if (node.inputMode == DialogueNodeInputMode.Choices &&
+            node.choices != null && node.choices.Count > 0)
+        {
+            state = DialogueState.Choices;
+            for (int i = 0; i < node.choices.Count; i++)
+            {
+                int choiceIndex = i;
+                DialogueChoice choice = node.choices[i];
+                if (choice == null) continue;
+                Button button = Instantiate(optionButtonPrefab, optionsContainer);
+                button.gameObject.SetActive(true);
+                TextMeshProUGUI label = button.GetComponentInChildren<TextMeshProUGUI>();
+                if (label != null) label.text = choice.optionText;
+                button.onClick.AddListener(() => { if (Revision == revision) SelectChoice(choiceIndex); });
+            }
         }
     }
 
-    private void ShowGeneratedResponseNode(DialogueNode node)
+    // All display paths share UI cleanup, input locking, and request invalidation.
+    private void Present(DialogueState nextState, string speaker, string line)
     {
         ClearOptions();
-        HideFreeTextInput();
-
-        waitingForChoice = false;
-        waitingForFreeTextInput = false;
-        waitingForAIResponse = true;
-
-        string speakerName = string.IsNullOrWhiteSpace(node.speakerNameOverride)
-            ? activeDialogue.speakerName
-            : node.speakerNameOverride;
-
-        NPCNameText.text = speakerName;
-        NPCDialogueText.text = "...";
-
-        OnGeneratedResponseRequested?.Invoke(activeDialogue, node, lastSubmittedFreeText);
+        freeTextInputPanel?.SetActive(false);
+        state = nextState;
+        Revision++;
+        gameObject.SetActive(true);
+        NPCNameText.text = speaker;
+        NPCDialogueText.text = line;
+        SetPlayerMovement(false);
     }
 
-    private void ShowNodeFreeTextInput(string speakerName, string promptText)
+    public void ShowFreeTextInput(string speakerName, string promptText)
     {
-        waitingForFreeTextInput = true;
+        Present(DialogueState.FreeText, speakerName, promptText);
+        OpenTextInput(promptText);
+    }
 
-        if (!string.IsNullOrWhiteSpace(promptText))
-        {
-            NPCDialogueText.text = promptText;
-        }
+    public void ShowFreeTextInput() => ShowFreeTextInput("", "What do you say?");
 
+    private void OpenTextInput(string prompt)
+    {
+        state = DialogueState.FreeText;
+        NPCDialogueText.text = prompt;
         freeTextInputPanel?.SetActive(true);
-
-        if (playerInputField != null)
-        {
-            playerInputField.text = "";
-            playerInputField.ActivateInputField();
-        }
+        if (playerInputField == null) return;
+        playerInputField.text = "";
+        playerInputField.ActivateInputField();
     }
 
-    private void ShowChoices(DialogueNode node)
+    public void HideFreeTextInput()
     {
-        waitingForChoice = true;
-
-        for (int i = 0; i < node.choices.Count; i++)
-        {
-            int choiceIndex = i;
-            DialogueChoice choice = node.choices[i];
-
-            Button button = Instantiate(optionButtonPrefab, optionsContainer);
-            button.gameObject.SetActive(true);
-
-            TextMeshProUGUI buttonText = button.GetComponentInChildren<TextMeshProUGUI>();
-            if (buttonText != null)
-            {
-                buttonText.text = choice.optionText;
-            }
-
-            button.onClick.AddListener(() => SelectChoice(choiceIndex));
-        }
+        freeTextInputPanel?.SetActive(false);
+        if (state == DialogueState.FreeText) state = DialogueState.Continue;
     }
+
+    private void SubmitFreeTextInput()
+    {
+        if (state != DialogueState.FreeText || playerInputField == null) return;
+        string input = playerInputField.text.Trim();
+        if (string.IsNullOrWhiteSpace(input)) return;
+        lastSubmittedFreeText = input;
+        DialogueNode node = CurrentNode;
+        DisplayPendingLine(NPCNameText.text);
+
+        if (node != null && node.freeTextSubmitMode == FreeTextSubmitMode.DirectNode)
+        {
+            JumpToNode(node.directFreeTextTargetNodeId);
+            return;
+        }
+        OnFreeTextSubmitted?.Invoke(input, activeDialogue, node);
+    }
+
+    public void DisplayPendingLine(string speakerName) => Present(DialogueState.Pending, speakerName, "...");
 
     public void DisplayFreeChatLine(string speakerName, string line)
     {
-        ClearOptions();
-        HideFreeTextInput();
-
-        activeDialogue = null;
-        conversationActive = true;
-        waitingForChoice = false;
-        waitingForFreeTextInput = false;
-        waitingForAIResponse = false;
-        currentNodeIndex = -1;
-
-        SetPlayerMovement(false);
-
-        if (!gameObject.activeSelf)
-        {
-            gameObject.SetActive(true);
-        }
-
-        NPCNameText.text = speakerName;
-        NPCDialogueText.text = line;
-    }
-
-    public void DisplayGeneratedResponseLine(string speakerName, string line)
-    {
-        ClearOptions();
-        HideFreeTextInput();
-
         activeDialogue = null;
         currentNodeIndex = -1;
-        conversationActive = true;
-        waitingForChoice = false;
-        waitingForFreeTextInput = false;
-        waitingForAIResponse = false;
-
-        SetPlayerMovement(false);
-        gameObject.SetActive(true);
-
-        NPCNameText.text = speakerName;
-        NPCDialogueText.text = SanitizeGeneratedText(line);
+        Present(DialogueState.Continue, speakerName, line);
     }
 
-    private string SanitizeGeneratedText(string text)
+    public void DisplayGeneratedResponseLine(string speakerName, string line) =>
+        DisplayFreeChatLine(speakerName, (line ?? "").Replace("<", "").Replace(">", "").Trim());
+
+    private void SelectChoice(int index)
     {
-        if (string.IsNullOrWhiteSpace(text))
-        {
-            return "";
-        }
-
-        return text.Replace("<", "").Replace(">", "").Trim();
-    }
-
-    private void EndDisplayedFreeChat()
-    {
-        EndConversation();
-    }
-
-    private void SelectChoice(int choiceIndex)
-    {
-        if (!conversationActive || currentNodeIndex < 0)
-        {
-            return;
-        }
-
-        DialogueNode currentNode = activeDialogue.nodes[currentNodeIndex];
-
-        if (choiceIndex < 0 || choiceIndex >= currentNode.choices.Count)
-        {
-            return;
-        }
-
-        DialogueChoice choice = currentNode.choices[choiceIndex];
-
+        DialogueNode node = CurrentNode;
+        if (state != DialogueState.Choices || node?.choices == null ||
+            index < 0 || index >= node.choices.Count) return;
+        DialogueChoice choice = node.choices[index];
+        if (choice == null) return;
+        int revision = Revision;
+        state = DialogueState.Continue;
         FireTrigger(choice.triggerId);
-        ClearOptions();
-
-        waitingForChoice = false;
-
-        if (choice.endsConversationAfterThisLine)
-        {
-            EndConversation();
-            return;
-        }
-
-        if (!string.IsNullOrWhiteSpace(choice.nextNodeId))
-        {
-            JumpToNode(choice.nextNodeId);
-            return;
-        }
-
-        AdvanceFromCurrentNode();
+        if (Revision != revision) return;
+        if (choice.endsConversationAfterThisLine) EndConversation();
+        else if (!string.IsNullOrWhiteSpace(choice.nextNodeId)) JumpToNode(choice.nextNodeId);
+        else AdvanceFromCurrentNode();
     }
 
     private void AdvanceFromCurrentNode()
     {
-        if (!conversationActive)
-        {
-            return;
-        }
-
-        if (activeDialogue == null)
-        {
-            EndConversation();
-            return;
-        }
-
-        if (currentNodeIndex < 0)
-        {
-            return;
-        }
-
-        DialogueNode currentNode = activeDialogue.nodes[currentNodeIndex];
-
-        if (currentNode.endsConversationAfterThisLine)
-        {
-            EndConversation();
-            return;
-        }
-
-        if (!string.IsNullOrWhiteSpace(currentNode.nextNodeId))
-        {
-            JumpToNode(currentNode.nextNodeId);
-            return;
-        }
-
-        int nextIndex = currentNodeIndex + 1;
-
-        if (nextIndex >= activeDialogue.nodes.Count)
-        {
-            EndConversation();
-            return;
-        }
-
-        ShowNode(nextIndex);
+        DialogueNode node = CurrentNode;
+        if (node == null || node.endsConversationAfterThisLine) EndConversation();
+        else if (!string.IsNullOrWhiteSpace(node.nextNodeId)) JumpToNode(node.nextNodeId);
+        else ShowNode(currentNodeIndex + 1);
     }
 
-    private void JumpToNode(string nodeId)
+    private bool JumpToNode(string id)
     {
-        if (nodeLookup.TryGetValue(nodeId, out int index))
+        if (!string.IsNullOrWhiteSpace(id) && nodeLookup.TryGetValue(id, out int index))
         {
             ShowNode(index);
-            return;
+            return IsConversationActive;
         }
-
-        Debug.LogWarning($"Dialogue node id not found: {nodeId}");
-        EndConversation();
-    }
-
-    private void FireTrigger(string triggerId)
-    {
-        if (string.IsNullOrWhiteSpace(triggerId))
-        {
-            return;
-        }
-
-        onDialogueTrigger?.Invoke(triggerId);
-    }
-
-    private void ClearOptions()
-    {
-        if (optionsContainer == null)
-        {
-            return;
-        }
-
-        for (int i = optionsContainer.childCount - 1; i >= 0; i--)
-        {
-            Destroy(optionsContainer.GetChild(i).gameObject);
-        }
-    }
-
-    private void EndConversation()
-    {
-        ClearOptions();
-        HideFreeTextInput();
-
-        activeDialogue = null;
-        currentNodeIndex = -1;
-        conversationActive = false;
-        waitingForChoice = false;
-        waitingForFreeTextInput = false;
-        waitingForAIResponse = false;
-        lastSubmittedFreeText = "";
-
-        SetPlayerMovement(true);
-
-        if (gameObject.activeSelf)
-        {
-            gameObject.SetActive(false);
-        }
-
-        OnConversationEnded?.Invoke();
-    }
-
-    private void OnDisable()
-    {
-        SetPlayerMovement(true);
-    }
-
-    private void SetPlayerMovement(bool enabled)
-    {
-        if (player == null)
-        {
-            player = FindAnyObjectByType<Player>();
-        }
-
-        if (player != null)
-        {
-            player.SetMovementEnabled(enabled);
-        }
-    }
-    public void DisplayPendingLine(string speakerName)
-    {
-        ClearOptions();
-        HideFreeTextInput();
-
-        conversationActive = true;
-        waitingForChoice = false;
-        waitingForFreeTextInput = false;
-        waitingForAIResponse = true;
-
-        SetPlayerMovement(false);
-        gameObject.SetActive(true);
-
-        NPCNameText.text = speakerName;
-        NPCDialogueText.text = "...";
-    }
-
-    public bool TryRouteCurrentNodeByIntent(string intent, GameStateProvider gameStateProvider)
-    {
-        waitingForAIResponse = false;
-
-        DialogueNode node = CurrentNode;
-
-        if (node == null)
-        {
-            Debug.LogWarning("Cannot route intent because there is no current dialogue node.");
-            EndConversation();
-            return false;
-        }
-
-        DialogueIntentRoute route = FindIntentRoute(node, intent);
-
-        if (route == null)
-        {
-            return RouteToUnknownIntentNode(node);
-        }
-
-        if (!IsRouteAllowed(route, gameStateProvider))
-        {
-            Debug.LogWarning($"Intent route blocked by conditions. Intent: {intent}");
-            return RouteToUnknownIntentNode(node);
-        }
-
-        if (string.IsNullOrWhiteSpace(route.nextNodeId))
-        {
-            Debug.LogWarning($"Intent route has no next node. Intent: {intent}");
-            return RouteToUnknownIntentNode(node);
-        }
-
-        JumpToNode(route.nextNodeId);
-        return true;
-    }
-
-    private DialogueIntentRoute FindIntentRoute(DialogueNode node, string intent)
-    {
-        if (node.intentRoutes == null || string.IsNullOrWhiteSpace(intent))
-        {
-            return null;
-        }
-
-        foreach (DialogueIntentRoute route in node.intentRoutes)
-        {
-            if (route != null && route.intent == intent)
-            {
-                return route;
-            }
-        }
-
-        return null;
-    }
-
-    private bool RouteToUnknownIntentNode(DialogueNode node)
-    {
-        if (!string.IsNullOrWhiteSpace(node.unknownIntentNodeId))
-        {
-            JumpToNode(node.unknownIntentNodeId);
-            return true;
-        }
-
-        Debug.LogWarning("No matching intent route and no unknownIntentNodeId set.");
+        Debug.LogWarning($"Dialogue node id not found: {id}");
         EndConversation();
         return false;
     }
 
-    private bool IsRouteAllowed(DialogueIntentRoute route, GameStateProvider gameStateProvider)
+    public bool TryRouteCurrentNodeByIntent(string intent, GameStateProvider gameStateProvider)
     {
-        if (route == null)
-        {
-            return false;
-        }
+        DialogueNode node = CurrentNode;
+        DialogueIntentRoute route = node?.intentRoutes?.Find(
+            candidate => candidate != null && candidate.intent == intent);
+        string destination = IsRouteAllowed(route, gameStateProvider) &&
+            !string.IsNullOrWhiteSpace(route.nextNodeId) ? route.nextNodeId : node?.unknownIntentNodeId;
+        return JumpToNode(destination);
+    }
 
-        if (!string.IsNullOrWhiteSpace(route.requiredFlag))
-        {
-            if (gameStateProvider == null || !gameStateProvider.HasFlag(route.requiredFlag))
-            {
-                return false;
-            }
-        }
+    private static bool IsRouteAllowed(DialogueIntentRoute route, GameStateProvider provider)
+    {
+        if (route == null) return false;
+        if (!string.IsNullOrWhiteSpace(route.requiredFlag) &&
+            (provider == null || !provider.HasFlag(route.requiredFlag))) return false;
+        return string.IsNullOrWhiteSpace(route.blockedByFlag) ||
+            provider == null || !provider.HasFlag(route.blockedByFlag);
+    }
 
-        if (!string.IsNullOrWhiteSpace(route.blockedByFlag))
-        {
-            if (gameStateProvider != null && gameStateProvider.HasFlag(route.blockedByFlag))
-            {
-                return false;
-            }
-        }
+    private void FireTrigger(string id)
+    {
+        if (!string.IsNullOrWhiteSpace(id)) onDialogueTrigger?.Invoke(id);
+    }
 
-        return true;
+    private void ClearOptions()
+    {
+        if (optionsContainer == null) return;
+        for (int i = optionsContainer.childCount - 1; i >= 0; i--)
+        {
+            GameObject option = optionsContainer.GetChild(i).gameObject;
+            option.SetActive(false);
+            Destroy(option);
+        }
+    }
+
+    public void EndConversation()
+    {
+        bool wasActive = IsConversationActive;
+        state = DialogueState.Closed;
+        Revision++;
+        activeDialogue = null;
+        currentNodeIndex = -1;
+        lastSubmittedFreeText = "";
+        nodeLookup.Clear();
+        ClearOptions();
+        freeTextInputPanel?.SetActive(false);
+        SetPlayerMovement(true);
+        gameObject.SetActive(false);
+        if (wasActive) OnConversationEnded?.Invoke();
+    }
+
+    private void OnDisable()
+    {
+        if (IsConversationActive) EndConversation();
+    }
+
+    private void SetPlayerMovement(bool enabled)
+    {
+        if (player == null) player = FindAnyObjectByType<Player>();
+        if (player != null && player.movementEnabled != enabled) player.SetMovementEnabled(enabled);
     }
 }

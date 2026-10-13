@@ -4,126 +4,60 @@ from typing import Any
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 
-from app.nodes.build_response import (
+from app.nodes import (
     build_fallback_response_node,
     build_generated_response_node,
     build_intent_route_response_node,
-)
-from app.nodes.classify_intent import classify_intent
-from app.nodes.generate_response import call_tool_layer, generate_free_response
-from app.nodes.load_context import (
+    call_tool_layer,
+    classify_intent,
+    generate_free_response,
     load_generation_policy,
     load_intent_policy,
     load_npc_context,
+    route_by_requested_mode,
+    validate_generated_response,
+    validate_intent_output,
+    validate_request,
 )
-from app.nodes.validate_output import validate_generated_response, validate_intent_output
-from app.nodes.validate_request import validate_request
 from app.schemas import AIDialogueRequest, AIDialogueResponse, build_fallback_response
 from app.state import DialogueGraphState
 
 
-def route_after_validation(state: DialogueGraphState) -> str:
-    """Route validated requests to shared context loading or fallback."""
-
-    if state.get("graph_route") == "fallback":
-        return "fallback"
-
-    return "load_npc_context"
-
-
-def route_after_context(state: DialogueGraphState) -> str:
-    """Route the shared context to its policy-specific branch."""
-
-    graph_route = state.get("graph_route")
-    if graph_route == "fallback":
-        return "fallback"
-
-    if graph_route == "intent_route":
-        return "load_intent_policy"
-
-    if graph_route == "free_response":
-        return "load_generation_policy"
-
-    return "fallback"
-
-
-def route_fallback_or_next(next_node: str) -> Callable[[DialogueGraphState], str]:
-    """Build a conditional route that preserves fallback short-circuiting."""
-
-    def route(state: DialogueGraphState) -> str:
-        return "fallback" if state.get("graph_route") == "fallback" else next_node
-
-    return route
-
-
 def create_dialogue_graph() -> CompiledStateGraph[Any, Any, Any, Any]:
-    """Compile the deterministic dialogue graph from reusable node functions."""
-
+    """Keep each observable stage, with one fallback rule for every pipeline."""
     graph = StateGraph(DialogueGraphState)
-    graph.add_node("validate_request", validate_request)
-    graph.add_node("load_npc_context", load_npc_context)
-    graph.add_node("load_intent_policy", load_intent_policy)
-    graph.add_node("load_generation_policy", load_generation_policy)
-    graph.add_node("classify_intent", classify_intent)
-    graph.add_node("call_tool_layer", call_tool_layer)
-    graph.add_node("generate_free_response", generate_free_response)
-    graph.add_node("validate_intent_output", validate_intent_output)
-    graph.add_node("validate_generated_response", validate_generated_response)
-    graph.add_node("build_intent_route_response", build_intent_route_response_node)
-    graph.add_node("build_generated_response", build_generated_response_node)
-    graph.add_node("build_fallback_response", build_fallback_response_node)
+    fallback_node = "build_fallback_response"
+    graph.add_node(fallback_node, build_fallback_response_node)
+    graph.add_edge(fallback_node, END)
 
+    def pipeline(*stages: Callable[[DialogueGraphState], DialogueGraphState]) -> str:
+        names = [stage.__name__.removesuffix("_node") for stage in stages]
+        for name, stage in zip(names, stages, strict=True):
+            graph.add_node(name, stage)
+        for current, following in zip(names, names[1:]):
+            def route(state: DialogueGraphState, next_node: str = following) -> str:
+                return fallback_node if state.get("graph_route") == "fallback" else next_node
+
+            graph.add_conditional_edges(current, route, [fallback_node, following])
+        return names[-1]
+
+    context_end = pipeline(validate_request, load_npc_context)
+    intent_end = pipeline(
+        load_intent_policy, classify_intent, validate_intent_output,
+        build_intent_route_response_node,
+    )
+    generation_end = pipeline(
+        load_generation_policy, call_tool_layer, generate_free_response,
+        validate_generated_response, build_generated_response_node,
+    )
     graph.add_edge(START, "validate_request")
-    graph.add_conditional_edges(
-        "validate_request",
-        route_after_validation,
-        {
-            "fallback": "build_fallback_response",
-            "load_npc_context": "load_npc_context",
-        },
-    )
-    graph.add_conditional_edges(
-        "load_npc_context",
-        route_after_context,
-        {
-            "fallback": "build_fallback_response",
-            "load_intent_policy": "load_intent_policy",
-            "load_generation_policy": "load_generation_policy",
-        },
-    )
-    graph.add_conditional_edges(
-        "load_intent_policy",
-        route_fallback_or_next("classify_intent"),
-        {
-            "fallback": "build_fallback_response",
-            "classify_intent": "classify_intent",
-        },
-    )
-    graph.add_edge("classify_intent", "validate_intent_output")
-    graph.add_edge("validate_intent_output", "build_intent_route_response")
-    graph.add_edge("build_intent_route_response", END)
-
-    graph.add_conditional_edges(
-        "load_generation_policy",
-        route_fallback_or_next("call_tool_layer"),
-        {
-            "fallback": "build_fallback_response",
-            "call_tool_layer": "call_tool_layer",
-        },
-    )
-    graph.add_conditional_edges(
-        "call_tool_layer",
-        route_fallback_or_next("generate_free_response"),
-        {
-            "fallback": "build_fallback_response",
-            "generate_free_response": "generate_free_response",
-        },
-    )
-    graph.add_edge("generate_free_response", "validate_generated_response")
-    graph.add_edge("validate_generated_response", "build_generated_response")
-    graph.add_edge("build_generated_response", END)
-
-    graph.add_edge("build_fallback_response", END)
+    graph.add_conditional_edges(context_end, route_by_requested_mode, {
+        "intent_route": "load_intent_policy",
+        "free_response": "load_generation_policy",
+        "fallback": fallback_node,
+    })
+    graph.add_edge(intent_end, END)
+    graph.add_edge(generation_end, END)
     return graph.compile()
 
 
@@ -131,15 +65,9 @@ dialogue_graph = create_dialogue_graph()
 
 
 def run_dialogue_graph(request: AIDialogueRequest) -> AIDialogueResponse:
-    """Run the graph and always return a Unity-compatible response DTO."""
-
+    """Run the graph and return the existing Unity JSON contract."""
     final_state = dialogue_graph.invoke({"request": request})
     response = final_state.get("response") if isinstance(final_state, dict) else None
-
     if isinstance(response, AIDialogueResponse):
         return response
-
-    return build_fallback_response(
-        request.npcId,
-        "Dialogue graph did not produce a response.",
-    )
+    return build_fallback_response(request.npcId, "Dialogue graph did not produce a response.")

@@ -2,6 +2,7 @@ from typing import Any
 
 from app.config import get_settings
 from app.llm.client import LLMClient
+from app.nodes.validate_output import select_allowed_intent
 from app.state import DialogueGraphState
 
 
@@ -20,11 +21,11 @@ def classify_intent(state: DialogueGraphState) -> DialogueGraphState:
 def _classify_intent_llm(state: DialogueGraphState) -> DialogueGraphState:
     request = state.get("request")
     output = LLMClient().classify_intent(
-        npc_profile=_dict_value(state.get("npc_profile")),
+        npc_profile=state.get("npc_profile", {}),
         player_input=request.playerInput if request is not None else "",
-        allowed_intents=_string_list(state.get("allowed_intents")),
-        default_intent=_string_value(state.get("default_intent"), "unknown"),
-        intent_descriptions=_string_dict(state.get("intent_descriptions")),
+        allowed_intents=state.get("allowed_intents", []),
+        default_intent=state.get("default_intent", "unknown"),
+        intent_descriptions=state.get("intent_descriptions", {}),
     )
 
     return {
@@ -47,12 +48,10 @@ def _classify_intent_deterministic(
     player_input = request.playerInput.lower() if request is not None else ""
     candidate_intent, matched_rule = _classify_keywords(player_input)
 
-    allowed_intents = _string_list(state.get("allowed_intents"))
-    default_intent = _string_value(state.get("default_intent"), "unknown")
-    classified_intent = _select_allowed_intent(
+    classified_intent = select_allowed_intent(
         candidate_intent,
-        default_intent,
-        allowed_intents,
+        state.get("default_intent", "unknown"),
+        state.get("allowed_intents", []),
     )
 
     raw_output: dict[str, Any] = {
@@ -83,46 +82,3 @@ def _classify_keywords(player_input: str) -> tuple[str, str]:
         return "prompt_injection", "prompt_injection_keywords"
 
     return "unknown", "default"
-
-
-def _select_allowed_intent(
-    candidate_intent: str,
-    default_intent: str,
-    allowed_intents: list[str],
-) -> str:
-    if candidate_intent in allowed_intents:
-        return candidate_intent
-
-    if default_intent in allowed_intents:
-        return default_intent
-
-    if allowed_intents:
-        return allowed_intents[0]
-
-    return "unknown"
-
-
-def _dict_value(value: object) -> dict[str, Any]:
-    return value if isinstance(value, dict) else {}
-
-
-def _string_list(value: object) -> list[str]:
-    if not isinstance(value, list):
-        return []
-
-    return [item for item in value if isinstance(item, str)]
-
-
-def _string_dict(value: object) -> dict[str, str]:
-    if not isinstance(value, dict):
-        return {}
-
-    return {
-        key: item
-        for key, item in value.items()
-        if isinstance(key, str) and isinstance(item, str)
-    }
-
-
-def _string_value(value: object, default: str) -> str:
-    return value if isinstance(value, str) else default

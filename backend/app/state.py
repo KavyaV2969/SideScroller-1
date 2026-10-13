@@ -49,3 +49,12 @@ class DialogueGraphState(TypedDict, total=False):
     safety_reason: str
     fallback_reason: str
     errors: list[str]
+
+
+def fallback(state: DialogueGraphState, reason: str) -> DialogueGraphState:
+    """Return a state update that short-circuits any graph stage."""
+    return {
+        "graph_route": "fallback",
+        "fallback_reason": reason,
+        "errors": [*state.get("errors", []), reason],
+    }

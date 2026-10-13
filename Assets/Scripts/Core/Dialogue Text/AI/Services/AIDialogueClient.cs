@@ -31,83 +31,33 @@ public class AIDialogueClient : MonoBehaviour
 
     private async Task<AIDialogueResponse> SendMockDialogueRequest(AIDialogueRequest request)
     {
-        await Task.Delay(Mathf.RoundToInt(mockDelaySeconds * 1000f));
-
-        if (request.requestedMode == "free_response")
+        await Task.Delay(Mathf.Max(0, Mathf.RoundToInt(mockDelaySeconds * 1000f)));
+        bool generated = request.requestedMode == "free_response";
+        return new AIDialogueResponse
         {
-            return BuildMockGeneratedResponse(request);
-        }
-
-        return BuildMockIntentRouteResponse(request);
+            responseType = generated ? "generated_response" : "intent_route",
+            npcId = request.npcId,
+            intent = generated ? "" : ClassifyMockIntent(request.playerInput),
+            dialogueId = "",
+            startNodeId = "",
+            freeChatText = !generated ? "" : request.generatedResponseRequestId == "weekly_loot"
+                ? "This week's notable loot is Moonsteel Ore. The common pool includes frost resin, old linen, and bone charms."
+                : "I do not know much about that.",
+            proposedActions = new AIDialogueAction[0],
+            safety = new AISafetyInfo { blocked = false, reason = "" }
+        };
     }
 
-    private AIDialogueResponse BuildMockIntentRouteResponse(AIDialogueRequest request)
+    private static string ClassifyMockIntent(string playerInput)
     {
-        string input = (request.playerInput ?? "").ToLowerInvariant();
-
+        string input = (playerInput ?? "").ToLowerInvariant();
         if (input.Contains("loot") || input.Contains("drop") || input.Contains("reward table"))
-        {
-            return BuildMockIntentRouteResponse(request, "inquiry_of_weekly_loot");
-        }
-
-        if (input.Contains("brother") || input.Contains("tomas"))
-        {
-            return BuildMockIntentRouteResponse(request, "mention_brother_helped");
-        }
-
-        if (input.Contains("frostwell") || input.Contains("dungeon"))
-        {
-            return BuildMockIntentRouteResponse(request, "ask_about_dungeon");
-        }
-
+            return "inquiry_of_weekly_loot";
+        if (input.Contains("brother") || input.Contains("tomas")) return "mention_brother_helped";
+        if (input.Contains("frostwell") || input.Contains("dungeon")) return "ask_about_dungeon";
         if (input.Contains("ignore") || input.Contains("system") || input.Contains("prompt"))
-        {
-            return BuildMockIntentRouteResponse(request, "prompt_injection");
-        }
-
-        return BuildMockIntentRouteResponse(request, "unknown");
-    }
-
-    private AIDialogueResponse BuildMockIntentRouteResponse(AIDialogueRequest request, string intent)
-    {
-        return new AIDialogueResponse
-        {
-            responseType = "intent_route",
-            npcId = request.npcId,
-            intent = intent,
-            dialogueId = "",
-            startNodeId = "",
-            freeChatText = "",
-            proposedActions = new AIDialogueAction[0],
-            safety = new AISafetyInfo
-            {
-                blocked = false,
-                reason = ""
-            }
-        };
-    }
-
-    private AIDialogueResponse BuildMockGeneratedResponse(AIDialogueRequest request)
-    {
-        string line = request.generatedResponseRequestId == "weekly_loot"
-            ? "This week's notable loot is Moonsteel Ore. The common pool includes frost resin, old linen, and bone charms."
-            : "I do not know much about that.";
-
-        return new AIDialogueResponse
-        {
-            responseType = "generated_response",
-            npcId = request.npcId,
-            intent = "",
-            dialogueId = "",
-            startNodeId = "",
-            freeChatText = line,
-            proposedActions = new AIDialogueAction[0],
-            safety = new AISafetyInfo
-            {
-                blocked = false,
-                reason = ""
-            }
-        };
+            return "prompt_injection";
+        return "unknown";
     }
 
     private async Task<AIDialogueResponse> SendRealDialogueRequest(AIDialogueRequest request)

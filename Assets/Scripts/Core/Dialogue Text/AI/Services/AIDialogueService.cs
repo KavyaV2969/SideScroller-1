@@ -7,261 +7,93 @@ public class AIDialogueService : MonoBehaviour
     [SerializeField] private DialogueController dialogueController;
     [SerializeField] private GameStateProvider gameStateProvider;
 
-    public async void SubmitPlayerText(
-        AINPCDialogue npc,
-        string playerInput,
-        DialogueText currentDialogue,
-        DialogueNode currentNode
-    ) {
-        if (npc == null)
-        {
-            Debug.LogWarning("AIDialogueService received null NPC.");
-            return;
-        }
+    private int requestVersion;
+    private AINPCDialogue requestingNpc;
 
-        if (dialogueController == null)
-        {
-            Debug.LogWarning("AIDialogueService has no DialogueController assigned.");
-            return;
-        }
+    public void SubmitPlayerText(AINPCDialogue npc, string playerInput, DialogueText dialogue, DialogueNode node) =>
+        SendRequest(npc, playerInput, dialogue, node, false);
 
-        if (string.IsNullOrWhiteSpace(playerInput))
-        {
-            PlayFallback(npc);
-            return;
-        }
+    public void RequestGeneratedResponse(AINPCDialogue npc, DialogueText dialogue, DialogueNode node, string playerInput) =>
+        SendRequest(npc, playerInput, dialogue, node, true);
 
-        if (client == null)
-        {
-            Debug.LogWarning("AIDialogueService has no AIDialogueClient assigned.");
-            PlayFallback(npc);
-            return;
-        }
-
-        AIDialogueRequest request = new AIDialogueRequest
-        {
-            npcId = npc.NpcId,
-            playerInput = playerInput,
-            requestedMode = "intent_route",
-            currentDialogueId = currentDialogue != null ? currentDialogue.dialogueId : "",
-            currentNodeId = currentNode != null ? currentNode.nodeId : "",
-            playerState = gameStateProvider != null
-                ? gameStateProvider.BuildSnapshotForNPC(npc.NpcId)
-                : new PlayerStateSnapshot()
-        };
-
-        try
-        {
-            AIDialogueResponse response = await client.SendDialogueRequest(request);
-
-            if (response == null)
-            {
-                PlayFallback(npc);
-                return;
-            }
-
-            HandleResponse(npc, response);
-        }
-        catch (System.Exception exception)
-        {
-            Debug.LogWarning($"AI dialogue flow failed: {exception.Message}");
-            PlayFallback(npc);
-        }
-    }
-
-    public async void RequestGeneratedResponse(
-        AINPCDialogue npc,
-        DialogueText currentDialogue,
-        DialogueNode currentNode,
-        string playerInput)
+    private async void SendRequest(
+        AINPCDialogue npc, string input, DialogueText dialogue, DialogueNode node, bool generated)
     {
-        if (npc == null)
+        if (npc == null || dialogueController == null)
         {
-            Debug.LogWarning("AIDialogueService received null NPC for generated response.");
+            Debug.LogWarning("AI dialogue requires an NPC and DialogueController.");
             return;
         }
 
-        if (currentNode == null)
+        int version = ++requestVersion;
+        int revision = dialogueController.Revision;
+        requestingNpc = npc;
+        AIDialogueResponse response = null;
+        if (client != null && (generated ? node != null : !string.IsNullOrWhiteSpace(input)))
         {
-            Debug.LogWarning("AIDialogueService received null generated-response node.");
-            PlayFallback(npc);
-            return;
-        }
-
-        if (dialogueController == null)
-        {
-            Debug.LogWarning("AIDialogueService has no DialogueController assigned.");
-            return;
-        }
-
-        if (client == null)
-        {
-            Debug.LogWarning("AIDialogueService has no AIDialogueClient assigned.");
-            DisplayGeneratedFallback(npc, currentNode);
-            return;
-        }
-
-        AIDialogueRequest request = new AIDialogueRequest
-        {
-            npcId = npc.NpcId,
-            playerInput = playerInput ?? "",
-            requestedMode = "free_response",
-            currentDialogueId = currentDialogue != null ? currentDialogue.dialogueId : "",
-            currentNodeId = currentNode.nodeId,
-            generatedResponseRequestId = currentNode.generatedResponseRequestId,
-            playerState = gameStateProvider != null
-                ? gameStateProvider.BuildSnapshotForNPC(npc.NpcId)
-                : new PlayerStateSnapshot()
-        };
-
-        try
-        {
-            AIDialogueResponse response = await client.SendDialogueRequest(request);
-
-            if (!IsValidGeneratedResponse(response, npc, currentNode))
+            var request = new AIDialogueRequest
             {
-                DisplayGeneratedFallback(npc, currentNode);
-                return;
-            }
-
-            string text = response.freeChatText.Trim();
-            int maxCharacters = Mathf.Max(0, currentNode.maxGeneratedCharacters);
-
-            if (text.Length > maxCharacters)
+                npcId = npc.NpcId,
+                playerInput = input ?? "",
+                requestedMode = generated ? "free_response" : "intent_route",
+                currentDialogueId = dialogue != null ? dialogue.dialogueId : "",
+                currentNodeId = node?.nodeId ?? "",
+                generatedResponseRequestId = generated ? node?.generatedResponseRequestId : "",
+                playerState = gameStateProvider != null
+                    ? gameStateProvider.BuildSnapshotForNPC(npc.NpcId) : new PlayerStateSnapshot()
+            };
+            try
             {
-                text = text.Substring(0, maxCharacters);
+                response = await client.SendDialogueRequest(request);
             }
+            catch (System.Exception exception)
+            {
+                Debug.LogWarning($"AI dialogue request failed: {exception.Message}");
+            }
+        }
 
+        // Async replies belong to one display revision, even if the next conversation uses the same asset.
+        if (this == null || !isActiveAndEnabled || npc == null || !npc.isActiveAndEnabled ||
+            version != requestVersion || dialogueController == null ||
+            !dialogueController.IsConversationActive || revision != dialogueController.Revision) return;
+        requestingNpc = null;
+
+        bool valid = response != null && response.npcId == npc.NpcId &&
+            !(response.safety?.blocked ?? false) &&
+            (response.proposedActions == null || response.proposedActions.Length == 0);
+        if (generated && node != null)
+        {
+            valid &= node.contentMode == DialogueNodeContentMode.GeneratedResponse &&
+                response?.responseType == "generated_response" && !string.IsNullOrWhiteSpace(response?.freeChatText);
+            string text = valid ? response.freeChatText.Trim() : node.generatedFallbackText;
+            if (valid && text.Length > Mathf.Max(0, node.maxGeneratedCharacters))
+                text = text.Substring(0, Mathf.Max(0, node.maxGeneratedCharacters));
             dialogueController.DisplayGeneratedResponseLine(npc.DisplayName, text);
         }
-        catch (System.Exception exception)
-        {
-            Debug.LogWarning($"Generated dialogue flow failed: {exception.Message}");
-            DisplayGeneratedFallback(npc, currentNode);
-        }
-    }
-
-    private void HandleResponse(AINPCDialogue npc, AIDialogueResponse response)
-    {
-        if (response.safety != null && response.safety.blocked)
-        {
-            PlayFallback(npc);
-            return;
-        }
-
-        if (response.npcId != npc.NpcId)
-        {
-            Debug.LogWarning($"Response NPC mismatch. Expected {npc.NpcId}, got {response.npcId}");
-            PlayFallback(npc);
-            return;
-        }
-
-        switch (response.responseType)
-        {
-            case "intent_route":
-                HandleIntentRouteResponse(npc, response);
-                break;
-
-            default:
-                Debug.LogWarning($"Rejected non-routing AI responseType: {response.responseType}");
-                PlayFallback(npc);
-                break;
-        }
-    }
-
-    private bool IsValidGeneratedResponse(
-        AIDialogueResponse response,
-        AINPCDialogue npc,
-        DialogueNode node)
-    {
-        if (response == null ||
-            node == null ||
-            node.contentMode != DialogueNodeContentMode.GeneratedResponse)
-        {
-            return false;
-        }
-
-        if (response.safety != null && response.safety.blocked)
-        {
-            return false;
-        }
-
-        if (response.npcId != npc.NpcId)
-        {
-            return false;
-        }
-
-        if (response.responseType != "generated_response")
-        {
-            return false;
-        }
-
-        if (response.proposedActions != null && response.proposedActions.Length > 0)
-        {
-            return false;
-        }
-
-        if (string.IsNullOrWhiteSpace(response.freeChatText))
-        {
-            return false;
-        }
-
-        return true;
-    }
-
-    private void PlayFallback(AINPCDialogue npc)
-    {
-        if (dialogueController == null)
-        {
-            Debug.LogWarning("Cannot play fallback because DialogueController is not assigned.");
-            return;
-        }
-
-        if (npc.FallbackDialogue != null)
-        {
-            dialogueController.StartDialogue(npc.FallbackDialogue);
-            return;
-        }
-
-        dialogueController.DisplayFreeChatLine(npc.DisplayName, "I do not know what to say to that.");
-    }
-
-    private void DisplayGeneratedFallback(AINPCDialogue npc, DialogueNode node)
-    {
-        if (dialogueController == null)
-        {
-            return;
-        }
-
-        dialogueController.DisplayGeneratedResponseLine(
-            npc.DisplayName,
-            node.generatedFallbackText);
-    }
-
-    private void HandleIntentRouteResponse(AINPCDialogue npc, AIDialogueResponse response)
-    {
-        if (response.proposedActions != null && response.proposedActions.Length > 0)
-        {
-            Debug.LogWarning("Intent-route response included actions. Rejected.");
-            PlayFallback(npc);
-            return;
-        }
-
-        if (string.IsNullOrWhiteSpace(response.intent))
-        {
-            Debug.LogWarning("Intent-route response had no intent.");
-            PlayFallback(npc);
-            return;
-        }
-
-        bool routed = dialogueController.TryRouteCurrentNodeByIntent(
-            response.intent,
-            gameStateProvider
-        );
-
-        if (!routed)
+        else if (!valid || response.responseType != "intent_route" || string.IsNullOrWhiteSpace(response.intent) ||
+            !dialogueController.TryRouteCurrentNodeByIntent(response.intent, gameStateProvider))
         {
             PlayFallback(npc);
         }
+    }
+
+    public void PlayFallback(AINPCDialogue npc)
+    {
+        if (npc == null || dialogueController == null) return;
+        if (npc.FallbackDialogue != null) dialogueController.StartDialogue(npc.FallbackDialogue);
+        else dialogueController.DisplayFreeChatLine(npc.DisplayName, "I do not know what to say to that.");
+    }
+
+    public void CancelPendingRequest(AINPCDialogue npc)
+    {
+        if (requestingNpc != npc) return;
+        requestVersion++;
+        requestingNpc = null;
+    }
+
+    private void OnDisable()
+    {
+        requestVersion++;
+        requestingNpc = null;
     }
 }

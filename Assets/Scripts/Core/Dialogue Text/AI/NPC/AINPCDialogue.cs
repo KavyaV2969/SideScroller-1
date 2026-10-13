@@ -35,7 +35,7 @@ public class AINPCDialogue : MonoBehaviour, IInteractable
         if (entryDialogue == null)
         {
             Debug.LogWarning($"{name} has no entry dialogue assigned.");
-            PlayFallback();
+            aiDialogueService.PlayFallback(this);
             return;
         }
 
@@ -69,22 +69,6 @@ public class AINPCDialogue : MonoBehaviour, IInteractable
         Unsubscribe();
     }
 
-    private void PlayFallback()
-    {
-        if (dialogueController == null)
-        {
-            return;
-        }
-
-        if (fallbackDialogue != null)
-        {
-            dialogueController.StartDialogue(fallbackDialogue);
-            return;
-        }
-
-        dialogueController.DisplayFreeChatLine(displayName, "I do not know what to say to that.");
-    }
-
     private void OnDisable()
     {
         Unsubscribe();
@@ -92,6 +76,7 @@ public class AINPCDialogue : MonoBehaviour, IInteractable
 
     private void Unsubscribe()
     {
+        if (aiDialogueService != null) aiDialogueService.CancelPendingRequest(this);
         if (dialogueController == null)
         {
             return;

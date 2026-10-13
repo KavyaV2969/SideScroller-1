@@ -86,3 +86,5 @@ crashlytics-build.properties
 *_bak*.hipnc
 
 *.DS_Store
+# Local decompilation and research (never commit game sources)
+/LocalResearch/
